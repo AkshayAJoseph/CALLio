@@ -1,12 +1,40 @@
-﻿"use client";
-import { useEffect, useState } from "react";
+"use client";
+import { useEffect, useRef, useState } from "react";
 import { getIntent, formatTimeIn, cityFromTz, isLateNight } from "../utils/intents";
+import {
+  notifyIncomingCall, closeCallNotification, startRingtone, stopRingtone,
+} from "../utils/notifications";
 
+/**
+ * Props (all come from useWebRTC()):
+ *  - incomingCall: null | { from, intentTag, priority, note, callerTime, callerTz }
+ *  - callState: any value. The modal does NOT need "RINGING"; it opens whenever
+ *    incomingCall is set and the call is not yet CONNECTED.
+ *  - onAccept: answerIncomingCall
+ *  - onDecline: endActiveCall
+ *  - suppress: true on /dependent for trusted guardians (Anjali's auto-answer takes over)
+ */
 export default function IncomingCallModal({
   incomingCall, callState, onAccept, onDecline, suppress = false,
 }) {
-  const open = callState === "RINGING" && incomingCall !== null && !suppress;
+  // Stable id for a call, so a re-created object from the hook does not re-ring.
+  const sig = incomingCall
+    ? `${incomingCall.from}|${incomingCall.callerTime}|${incomingCall.intentTag}`
+    : null;
 
+  // Locally remember Accept/Decline, in case the hook leaves incomingCall set.
+  const [dismissedSig, setDismissedSig] = useState(null);
+  useEffect(() => {
+    if (!incomingCall) setDismissedSig(null); // reset once the hook clears it
+  }, [incomingCall]);
+
+  const open =
+    !!incomingCall && callState !== "CONNECTED" && sig !== dismissedSig && !suppress;
+
+  const handleAccept = () => { setDismissedSig(sig); onAccept?.(); };
+  const handleDecline = () => { setDismissedSig(sig); onDecline?.(); };
+
+  const acceptRef = useRef(null);
   const [, force] = useState(0);
 
   // Re-render every 30s so the caller's clock stays correct while ringing.
@@ -15,6 +43,19 @@ export default function IncomingCallModal({
     const id = setInterval(() => force((n) => n + 1), 30000);
     return () => clearInterval(id);
   }, [open]);
+
+  // Notification + ringtone lifecycle.
+  useEffect(() => {
+    if (!open) return;
+    notifyIncomingCall(incomingCall);
+    startRingtone();
+    acceptRef.current?.focus();
+    return () => {
+      stopRingtone();
+      closeCallNotification();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sig]);
 
   if (!open) return null;
 
@@ -73,14 +114,15 @@ export default function IncomingCallModal({
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={onDecline}
+            onClick={handleDecline}
             className="min-h-14 rounded-2xl bg-slate-700 px-4 py-4 text-lg font-semibold hover:bg-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Decline
           </button>
           <button
+            ref={acceptRef}
             type="button"
-            onClick={onAccept}
+            onClick={handleAccept}
             className="min-h-14 rounded-2xl bg-emerald-500 px-4 py-4 text-lg font-semibold text-slate-950 hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Accept

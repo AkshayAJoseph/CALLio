@@ -1,4 +1,4 @@
-﻿// Shared intent config used by IntentPicker + IncomingCallModal.
+// Shared intent config used by IntentPicker + IncomingCallModal.
 // Full Tailwind class strings on purpose (dynamic class names get purged).
 export const INTENTS = {
   Urgent: {
@@ -43,3 +43,33 @@ export const getIntent = (tag, priority) =>
   INTENTS[tag] ||
   INTENT_LIST.find((i) => i.priority === priority) ||
   INTENTS.Casual;
+
+// ---- Timezone helpers ----
+export function formatTimeIn(tz) {
+  try {
+    return new Date().toLocaleTimeString("en-US", {
+      hour: "numeric", minute: "2-digit", ...(tz ? { timeZone: tz } : {}),
+    });
+  } catch {
+    return "";
+  }
+}
+
+export function hourIn(tz) {
+  try {
+    const h = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit", hourCycle: "h23", timeZone: tz,
+    }).format(new Date());
+    return parseInt(h, 10);
+  } catch {
+    return null;
+  }
+}
+
+// "Australia/Sydney" -> "Sydney"
+export const cityFromTz = (tz) => (tz ? tz.split("/").pop().replace(/_/g, " ") : "");
+
+export const isLateNight = (tz) => {
+  const h = hourIn(tz);
+  return h !== null && (h < 7 || h >= 22);
+};

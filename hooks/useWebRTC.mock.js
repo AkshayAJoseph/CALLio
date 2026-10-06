@@ -1,8 +1,18 @@
-"use client";
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// Mock of the shared useWebRTC contract. Swap the import line for the real hook later.
+// It connects locally with no remote peer, so it also covers the ?demo=true demo mode.
+
+const MY_NUMBER = "+61 480 000 111";
+const PARTNER_NUMBER = "+61 480 000 222";
+const CONNECT_DELAY_MS = 1500;
+const REMOTE_PTT_HOLD_MS = 3000;
+const TYPING_STEP_MS = 60;
+
+const formatTime = () =>
+  new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 export function useWebRTC() {
-  const [myNumber, setMyNumber] = useState("+61 480 000 111");
   const [callState, setCallState] = useState("IDLE");
   const [incomingCall, setIncomingCall] = useState(null);
   const [networkMode, setNetworkMode] = useState("FULL_AUDIO");
@@ -11,35 +21,69 @@ export function useWebRTC() {
   const [chatMessages, setChatMessages] = useState([]);
   const [remoteTypingText, setRemoteTypingText] = useState("");
 
+  // Always null in the mock, so stats polling must guard against it.
   const peerConnectionRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const dataChannelRef = useRef(null);
 
-  const registerNumber = useCallback((n) => setMyNumber(n), []);
+  const connectTimerRef = useRef(null);
+  const remotePTTTimerRef = useRef(null);
+  const typingTimerRef = useRef(null);
 
-  const startCall = useCallback((targetNumber, intentObject) => {
-    setCallState("CALLING");
-    setIncomingCall({ from: myNumber, to: targetNumber, ...intentObject });
-    setTimeout(() => setCallState("CONNECTED"), 1500);
-  }, [myNumber]);
-
-  const simulateIncomingCall = useCallback((payload) => {
-    setIncomingCall(
-      payload || {
-        from: "+61 480 111 222",
-        intentTag: "Urgent, Please Pick Up",
-        priority: "HIGH",
-        note: "Flight delayed in Sydney",
-        callerTime: "18:30",
-        callerTz: "Australia/Sydney",
-      }
-    );
-    setCallState("RINGING");
+  const clearTimers = useCallback(() => {
+    clearTimeout(connectTimerRef.current);
+    clearTimeout(remotePTTTimerRef.current);
+    clearInterval(typingTimerRef.current);
+    connectTimerRef.current = null;
+    remotePTTTimerRef.current = null;
+    typingTimerRef.current = null;
   }, []);
 
-  const answerIncomingCall = useCallback(() => setCallState("CONNECTED"), []);
+  useEffect(() => clearTimers, [clearTimers]);
+
+  const registerNumber = useCallback(() => { }, []);
+
+  const startCall = useCallback(
+    (targetNumber, intentObject) => {
+      if (callState !== "IDLE") return;
+      setIncomingCall(
+        intentObject
+          ? {
+            from: targetNumber || PARTNER_NUMBER,
+            intentTag: intentObject.intentTag ?? "",
+            priority: intentObject.priority ?? "MEDIUM",
+            note: intentObject.note ?? "",
+            callerTime: intentObject.callerTime ?? "",
+            callerTz: intentObject.callerTz ?? "",
+          }
+          : null
+      );
+      setCallState("CALLING");
+      clearTimeout(connectTimerRef.current);
+      connectTimerRef.current = setTimeout(() => {
+        setCallState("CONNECTED");
+      }, CONNECT_DELAY_MS);
+    },
+    [callState]
+  );
+
+  const simulateIncomingCall = useCallback(() => {
+    if (callState !== "IDLE") return;
+    setIncomingCall({
+      from: PARTNER_NUMBER,
+      intentTag: "Urgent, Please Pick Up",
+      priority: "HIGH",
+      note: "Please call me back as soon as you can",
+      callerTime: formatTime(),
+      callerTz: "Australia/Sydney",
+    });
+    setCallState("RINGING");
+  }, [callState]);
+
+  const answerIncomingCall = useCallback(() => {
+    setCallState((current) => (current === "RINGING" ? "CONNECTED" : current));
+  }, []);
 
   const endActiveCall = useCallback(() => {
+    clearTimers();
     setCallState("IDLE");
     setIncomingCall(null);
     setNetworkMode("FULL_AUDIO");
@@ -47,58 +91,80 @@ export function useWebRTC() {
     setIsRemotePTTTalking(false);
     setChatMessages([]);
     setRemoteTypingText("");
-  }, []);
+  }, [clearTimers]);
 
   const setFallbackMode = useCallback((mode) => {
     setNetworkMode(mode);
+    // Leaving PTT must never leave the mic held open.
+    if (mode !== "PTT") setIsPTTTalking(false);
   }, []);
 
-  const setPTTActive = useCallback((holding) => {
-    setIsPTTTalking(holding);
+  const setPTTActive = useCallback((active) => {
+    setIsPTTTalking(Boolean(active));
   }, []);
 
   const sendTextFallback = useCallback((text) => {
-    if (!text.trim()) return;
-    const msg = {
-      sender: myNumber,
-      text,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-    setChatMessages((prev) => [...prev, msg]);
-  }, [myNumber]);
-
-  const sendLiveTyping = useCallback(() => {}, []);
-
-  // Dev helper: partner types a message character by character
-  const __simulatePartnerTyping = useCallback((fullText, msPerChar = 90) => {
-    let i = 0;
-    const timer = setInterval(() => {
-      i += 1;
-      setRemoteTypingText(fullText.slice(0, i));
-      if (i >= fullText.length) {
-        clearInterval(timer);
-        setTimeout(() => {
-          setRemoteTypingText("");
-          setChatMessages((prev) => [
-            ...prev,
-            { sender: "+61 480 111 222", text: fullText, time: "10:05" },
-          ]);
-        }, 600);
-      }
-    }, msPerChar);
+    const trimmed = typeof text === "string" ? text.trim() : "";
+    if (!trimmed) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { sender: MY_NUMBER, text: trimmed, time: formatTime() },
+    ]);
   }, []);
 
-  // Dev helper: partner holds the talk button for 3 seconds
+  // The mock has no partner to notify, so the live draft goes nowhere.
+  const sendLiveTyping = useCallback(() => { }, []);
+
+  // Test helper: partner holds push to talk for a few seconds.
   const __simulatePartnerPTT = useCallback(() => {
     setIsRemotePTTTalking(true);
-    setTimeout(() => setIsRemotePTTTalking(false), 3000);
+    clearTimeout(remotePTTTimerRef.current);
+    remotePTTTimerRef.current = setTimeout(() => {
+      setIsRemotePTTTalking(false);
+    }, REMOTE_PTT_HOLD_MS);
+  }, []);
+
+  // Test helper: reveal the partner draft one character at a time, then send it as a message.
+  const __simulatePartnerTyping = useCallback((fullText) => {
+    const text = typeof fullText === "string" ? fullText : "";
+    if (!text) return;
+    clearInterval(typingTimerRef.current);
+    let index = 0;
+    typingTimerRef.current = setInterval(() => {
+      index += 1;
+      setRemoteTypingText(text.slice(0, index));
+      if (index >= text.length) {
+        clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+        setRemoteTypingText("");
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: PARTNER_NUMBER, text, time: formatTime() },
+        ]);
+      }
+    }, TYPING_STEP_MS);
   }, []);
 
   return {
-    myNumber, callState, incomingCall, networkMode, isPTTTalking,
-    isRemotePTTTalking, chatMessages, remoteTypingText, peerConnectionRef,
-    registerNumber, startCall, simulateIncomingCall, answerIncomingCall,
-    endActiveCall, setFallbackMode, setPTTActive, sendTextFallback,
-    sendLiveTyping, __simulatePartnerTyping, __simulatePartnerPTT,
+    myNumber: MY_NUMBER,
+    callState,
+    incomingCall,
+    networkMode,
+    isPTTTalking,
+    isRemotePTTTalking,
+    chatMessages,
+    remoteTypingText,
+    peerConnectionRef,
+    startCall,
+    answerIncomingCall,
+    endActiveCall,
+    registerNumber,
+    setFallbackMode,
+    setPTTActive,
+    sendTextFallback,
+    sendLiveTyping,
+    simulateIncomingCall,
+    __simulatePartnerPTT,
+    __simulatePartnerTyping,
   };
 }

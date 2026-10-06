@@ -12,7 +12,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 export function WebRTCProvider({ children }) {
 
   // --- STATE VARIABLES (LOCKED CONTRACT) ---
-  const [myNumber, setMyNumber] = useState("+61 480 000 111");
+  const [myNumber, setMyNumber] = useState("+61480000111");
   const [isRegistered, setIsRegistered] = useState(false);
   const [onlineNumbers, setOnlineNumbers] = useState([]);
   
@@ -118,7 +118,26 @@ export function WebRTCProvider({ children }) {
       }
     });
 
+    socket.on("call-error", (data) => {
+      console.error("[WebRTC] Call failed:", data.message);
+      alert("Call failed: " + data.message);
+      setCallState("IDLE");
+      setActiveCallMeta(null);
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+    });
+
+    const handleFocus = () => {
+      if (socket.connected) {
+        socket.emit("register", myNumber);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+
     return () => {
+      window.removeEventListener("focus", handleFocus);
       socket.disconnect();
     };
   }, [myNumber]);
@@ -227,15 +246,20 @@ export function WebRTCProvider({ children }) {
 
   // --- ACTION FUNCTIONS (STUBS REPLACED) ---
   const registerNumber = (phoneNumberString) => {
-    setMyNumber(phoneNumberString);
+    const normalized = phoneNumberString.replace(/[\s\-\(\)]/g, "");
+    setMyNumber(normalized);
     if (socketRef.current?.connected) {
-      socketRef.current.emit("register", phoneNumberString);
+      socketRef.current.emit("register", normalized);
     }
   };
 
   const startCall = async (targetNumberString, intentObject) => {
     setCallState("CALLING");
-    setActiveCallMeta({ remoteNumber: targetNumberString, ...intentObject });
+    const normalizedTarget = targetNumberString.replace(/[\s\-\(\)]/g, "");
+    // If user forgot +61 for Australia, prefix it automatically
+    const finalTarget = (normalizedTarget.startsWith("4") && normalizedTarget.length === 9) ? "+61" + normalizedTarget : (normalizedTarget.startsWith("+") ? normalizedTarget : "+" + normalizedTarget);
+    
+    setActiveCallMeta({ remoteNumber: finalTarget, ...intentObject });
 
     if (isDemoLoopbackMode) {
       console.log("[Demo Mode] Simulating call connection in 1.2s...");
@@ -243,7 +267,7 @@ export function WebRTCProvider({ children }) {
         setCallState("CONNECTED");
         setNetworkMode("TEXT"); // Demo forces text mode to show off fallback
         setChatMessages([{
-          sender: targetNumberString,
+          sender: finalTarget,
           text: "Auto-reply: Connection degraded. Switched to TEXT mode.",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }]);
@@ -251,12 +275,12 @@ export function WebRTCProvider({ children }) {
       return;
     }
 
-    const pc = await createPeerConnection(targetNumberString);
+    const pc = await createPeerConnection(finalTarget);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
     socketRef.current.emit("call-user", {
-      to: targetNumberString,
+      to: finalTarget,
       from: myNumber,
       intentObject,
       offer,

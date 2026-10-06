@@ -34,6 +34,12 @@ io.on("connection", (socket) => {
 
   // Register a virtual number to this socket
   socket.on("register", (phoneNumber) => {
+    // If this socket already registered a different number, remove the old one first
+    const oldNumber = reversePhonebook.get(socket.id);
+    if (oldNumber && oldNumber !== phoneNumber) {
+      phonebook.delete(oldNumber);
+    }
+    
     phonebook.set(phoneNumber, socket.id);
     reversePhonebook.set(socket.id, phoneNumber);
     console.log(`[Cooee Echo] Registered ${phoneNumber} to ${socket.id}`);

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CooeeLogo } from "./CooeeLogo";
+import { CooeeLogo } from "@/components/CooeeLogo";
 
 interface NavItem {
   label: string;

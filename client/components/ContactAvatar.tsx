@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Contact } from "../lib/contacts";
+import type { Contact } from "@/lib/contacts";
 
 interface ContactAvatarProps {
   contact: Pick<Contact, "name" | "initials" | "avatarBg" | "avatarText" | "photoUrl">;

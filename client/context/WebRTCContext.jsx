@@ -185,19 +185,87 @@ export function WebRTCProvider({ children }) {
   };
 
   const startCall = async (targetNumberString, intentObject) => {
-    console.log("startCall stub", targetNumberString, intentObject);
+    setCallState("CALLING");
+    setActiveCallMeta({ remoteNumber: targetNumberString, ...intentObject });
+
+    const pc = await createPeerConnection(targetNumberString);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    socketRef.current.emit("call-user", {
+      to: targetNumberString,
+      from: myNumber,
+      intentObject,
+      offer,
+    });
   };
 
   const simulateIncomingCall = (mockPayloadOptional) => {
-    console.log("simulateIncomingCall stub", mockPayloadOptional);
+    const payload = mockPayloadOptional || {
+      from: "+61 480 000 222",
+      to: myNumber,
+      intentTag: "Urgent - Please Pick Up",
+      priority: "HIGH",
+      note: "Simulated Test Call",
+      callerTime: "10:00",
+      callerTz: "Australia/Sydney"
+    };
+    setIncomingCall(payload);
+    setCallState("RINGING");
+    setActiveCallMeta({ remoteNumber: payload.from, ...payload });
   };
 
   const answerIncomingCall = async () => {
-    console.log("answerIncomingCall stub");
+    if (!incomingCall) return;
+    
+    const pc = await createPeerConnection(incomingCall.from);
+    await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+    
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    socketRef.current.emit("answer-call", {
+      to: incomingCall.from,
+      from: myNumber,
+      answer,
+    });
+
+    setCallState("CONNECTED");
+    
+    // Flush ICE queue now that remoteDescription is set
+    iceCandidateQueueRef.current.forEach(async (c) => {
+      try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (e) {}
+    });
+    iceCandidateQueueRef.current = [];
+    
+    // Clear incoming call so modal unmounts, but keep activeCallMeta!
+    setIncomingCall(null);
   };
 
   const endActiveCall = () => {
-    console.log("endActiveCall stub");
+    if (activeCallMeta && socketRef.current) {
+      socketRef.current.emit("end-call", {
+        to: activeCallMeta.remoteNumber,
+        from: myNumber,
+      });
+    }
+    
+    setCallState("IDLE");
+    setIncomingCall(null);
+    setActiveCallMeta(null);
+    setNetworkMode("FULL_AUDIO");
+    setChatMessages([]);
+    setRemoteLiveDraft("");
+    setIsRemoteTyping(false);
+    
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
   };
 
   const setFallbackMode = (mode) => {

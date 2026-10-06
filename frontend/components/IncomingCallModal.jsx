@@ -17,7 +17,19 @@ export default function IncomingCallModal({
       aria-labelledby="incoming-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4"
     >
+      <p className="sr-only" aria-live="assertive">
+        Incoming {intent.label} call from {incomingCall.from}
+      </p>
+
       <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 text-center text-slate-100 shadow-2xl">
+        {/* Separate ring so only the border pulses, not the text */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 rounded-3xl border-4 ${intent.ring} ${
+            intent.pulse ? "animate-pulse" : "opacity-70"
+          }`}
+        />
+
         <p className="text-sm text-slate-400">Incoming Cooee call</p>
         <h1 id="incoming-title" className="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">
           {incomingCall.from}

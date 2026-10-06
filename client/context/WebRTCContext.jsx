@@ -237,6 +237,20 @@ export function WebRTCProvider({ children }) {
     setCallState("CALLING");
     setActiveCallMeta({ remoteNumber: targetNumberString, ...intentObject });
 
+    if (isDemoLoopbackMode) {
+      console.log("[Demo Mode] Simulating call connection in 1.2s...");
+      setTimeout(() => {
+        setCallState("CONNECTED");
+        setNetworkMode("TEXT"); // Demo forces text mode to show off fallback
+        setChatMessages([{
+          sender: targetNumberString,
+          text: "Auto-reply: Connection degraded. Switched to TEXT mode.",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }]);
+      }, 1200);
+      return;
+    }
+
     const pc = await createPeerConnection(targetNumberString);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);

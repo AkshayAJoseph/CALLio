@@ -1,14 +1,28 @@
 ﻿"use client";
-import { getIntent } from "../utils/intents";
+import { useEffect, useState } from "react";
+import { getIntent, formatTimeIn, cityFromTz, isLateNight } from "../utils/intents";
 
 export default function IncomingCallModal({
   incomingCall, callState, onAccept, onDecline, suppress = false,
 }) {
   const open = callState === "RINGING" && incomingCall !== null && !suppress;
 
+  const [, force] = useState(0);
+
+  // Re-render every 30s so the caller's clock stays correct while ringing.
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(() => force((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, [open]);
+
   if (!open) return null;
 
   const intent = getIntent(incomingCall.intentTag, incomingCall.priority);
+  const tz = incomingCall.callerTz;
+  const callerClock = formatTimeIn(tz) || incomingCall.callerTime || "";
+  const city = cityFromTz(tz);
+  const late = tz ? isLateNight(tz) : false;
 
   return (
     <div
@@ -42,6 +56,18 @@ export default function IncomingCallModal({
 
         {incomingCall.note && (
           <p className="mt-4 text-lg text-slate-200">&ldquo;{incomingCall.note}&rdquo;</p>
+        )}
+
+        {tz && (
+          <div className="mt-5 rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-200">
+            <span aria-hidden="true">🌏 </span>
+            Caller local time: <strong>{callerClock}</strong> ({city})
+            {late && (
+              <p className="mt-2 inline-block rounded-full bg-indigo-500/20 px-3 py-1 text-indigo-200">
+                🌙 It is late at night for the caller
+              </p>
+            )}
+          </div>
         )}
 
         <div className="mt-6 grid grid-cols-2 gap-3">

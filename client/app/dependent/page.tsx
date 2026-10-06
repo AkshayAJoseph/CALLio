@@ -5,8 +5,8 @@ import Link from "next/link";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
 import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
-import { CooeeLogo } from "../../components/CooeeLogo";
-import { playChime } from "../../lib/audio";
+import { CooeeLogo } from "@/components/CooeeLogo";
+import { playChime } from "@/lib/audio";
 
 // Official trusted guardian numbers
 const trustedGuardians = ["+61 480 000 111"];
@@ -203,7 +203,7 @@ export default function DependentPortalPage() {
               </h2>
 
               <p className="text-2xl sm:text-3xl font-bold text-[#2B6CB0] mb-8">
-                {incomingCall.from} ΓÇó {incomingCall.intentTag || "Urgent"}
+                {incomingCall.from} • {incomingCall.intentTag || "Urgent"}
               </p>
 
               {/* VISIBLE COUNTDOWN: 3 -> 2 -> 1 */}
@@ -222,7 +222,7 @@ export default function DependentPortalPage() {
                   onClick={handleCancelAutoAnswer}
                   className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-95 border-4 border-red-500 py-6 text-2xl sm:text-3xl font-black text-white shadow-xl transition"
                 >
-                  Γ£ò CANCEL AUTO-ANSWER
+                  ✕ CANCEL AUTO-ANSWER
                 </button>
                 <p className="text-base text-slate-500 mt-3 font-semibold">
                   Pressing Cancel lets you decline or answer manually.
@@ -249,7 +249,7 @@ export default function DependentPortalPage() {
                   onClick={answerIncomingCall}
                   className="w-full rounded-3xl bg-[#2B6CB0] hover:bg-[#235891] active:scale-95 border-4 border-[#2B6CB0] py-8 text-3xl font-black text-white shadow-xl transition flex items-center justify-center gap-3"
                 >
-                  <span>≡ƒô₧</span>
+                  <span>📞</span>
                   <span>ANSWER</span>
                 </button>
 
@@ -257,7 +257,7 @@ export default function DependentPortalPage() {
                   onClick={handleEndCall}
                   className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-95 border-4 border-red-500 py-8 text-3xl font-black text-white shadow-xl transition flex items-center justify-center gap-3"
                 >
-                  <span>Γ£ò</span>
+                  <span>✕</span>
                   <span>DECLINE</span>
                 </button>
               </div>
@@ -300,7 +300,7 @@ export default function DependentPortalPage() {
               onClick={handleEndCall}
               className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-95 border-4 border-white py-8 sm:py-10 text-3xl sm:text-4xl font-black text-white shadow-2xl transition flex items-center justify-center gap-4"
             >
-              <span>Γ£ò</span>
+              <span>✕</span>
               <span>END CALL</span>
             </button>
           </div>
@@ -313,7 +313,7 @@ export default function DependentPortalPage() {
       {callState === "CALLING" && (
         <div className="fixed inset-0 z-50 bg-[#173B63] text-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-150">
           <div className="h-36 w-36 rounded-full border-8 border-[#7FB3E6] flex items-center justify-center text-6xl animate-pulse mb-8 bg-[#1E4670]">
-            ≡ƒô₧
+            📞
           </div>
 
           <h2 className="text-4xl sm:text-6xl font-black text-white mb-4">
@@ -327,7 +327,7 @@ export default function DependentPortalPage() {
             onClick={handleEndCall}
             className="w-full max-w-md rounded-3xl bg-red-600 hover:bg-red-700 py-6 text-2xl font-black text-white border-4 border-white transition"
           >
-            Γ£ò CANCEL CALL
+            ✕ CANCEL CALL
           </button>
         </div>
       )}
@@ -341,7 +341,7 @@ export default function DependentPortalPage() {
           <div className="flex items-center gap-6">
             {/* Contact Photo / High Contrast Avatar */}
             <div className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-3xl bg-[#F2F7E6] text-6xl sm:text-7xl font-black shadow-md border-4 border-[#A7C957]">
-              ≡ƒæ⌐
+              👩
               <span className="absolute -bottom-2 -right-2 rounded-full bg-[#A7C957] border-2 border-white px-2.5 py-0.5 text-xs font-black text-[#173B63]">
                 TRUSTED
               </span>
@@ -368,7 +368,7 @@ export default function DependentPortalPage() {
             }}
             className="mt-8 w-full rounded-3xl bg-[#A7C957] hover:bg-[#95b846] active:scale-95 border-4 border-[#A7C957] py-8 sm:py-10 text-3xl sm:text-4xl lg:text-5xl font-black text-[#173B63] shadow-md transition flex items-center justify-center gap-4 cursor-pointer"
           >
-            <span className="text-4xl sm:text-5xl">≡ƒô₧</span>
+            <span className="text-4xl sm:text-5xl">📞</span>
             <span>CALL MUM</span>
           </button>
         </section>
@@ -378,7 +378,7 @@ export default function DependentPortalPage() {
           <div className="flex items-center gap-6">
             {/* Contact Photo / High Contrast Avatar */}
             <div className="flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-3xl bg-[#FDF3EA] text-6xl sm:text-7xl font-black shadow-md border-4 border-[#F4A261]">
-              ≡ƒæ¿
+              👨
             </div>
 
             <div>
@@ -402,7 +402,7 @@ export default function DependentPortalPage() {
             }}
             className="mt-8 w-full rounded-3xl bg-[#2B6CB0] hover:bg-[#235891] active:scale-95 border-4 border-[#2B6CB0] py-8 sm:py-10 text-3xl sm:text-4xl lg:text-5xl font-black text-white shadow-md transition flex items-center justify-center gap-4 cursor-pointer"
           >
-            <span className="text-4xl sm:text-5xl">≡ƒô₧</span>
+            <span className="text-4xl sm:text-5xl">📞</span>
             <span>CALL AKHIL</span>
           </button>
         </section>
@@ -419,7 +419,7 @@ export default function DependentPortalPage() {
           }}
           className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-95 border-4 border-red-500 py-6 text-2xl sm:text-3xl font-black text-white shadow-lg transition flex items-center justify-center gap-4"
         >
-          <span className="text-3xl">≡ƒÜ¿</span>
+          <span className="text-3xl">🚨</span>
           <span>EMERGENCY HELP (CALL 000)</span>
         </button>
       </div>
@@ -430,7 +430,7 @@ export default function DependentPortalPage() {
       <footer className="border-t-2 border-[#DDE4EE] pt-4 flex flex-wrap items-center justify-between text-xs text-slate-500">
         <div className="flex items-center gap-3">
           <span className="font-bold text-[#173B63]">Cooee Dependent Mode</span>
-          <span>ΓÇó</span>
+          <span>•</span>
           <span>Tablet Simplified Screen</span>
         </div>
 
@@ -469,7 +469,7 @@ export default function DependentPortalPage() {
             href="/dialer"
             className="rounded-xl bg-[#173B63] hover:bg-[#102742] text-white px-3.5 py-1.5 text-[11px] font-bold shadow-sm transition"
           >
-            Switch to WebDialer Γ₧ö
+            Switch to WebDialer ➔
           </Link>
         </div>
       </footer>

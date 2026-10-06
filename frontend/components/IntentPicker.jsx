@@ -1,12 +1,43 @@
-﻿"use client";
-import { useState } from "react";
-import { INTENT_LIST } from "../utils/intents";
+"use client";
+import { useEffect, useState } from "react";
+import { INTENT_LIST, INTENTS, formatTimeIn } from "../utils/intents";
 
 const MAX_NOTE = 40;
 
-export default function IntentPicker() {
+// Build the payload at click time so the time is fresh.
+function buildIntent(tag, note) {
+  const i = INTENTS[tag];
+  const d = new Date();
+  return {
+    intentTag: i.label, // locked schema: full label string
+    priority: i.priority,
+    note: note.trim(),
+    callerTime: d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }),
+    callerTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
+}
+
+/**
+ * Props:
+ *  - targetNumber: string, number being dialled
+ *  - onCall(intentObject): usually (intent) => startCall(targetNumber, intent)
+ *  - disabled: boolean, true when callState !== "IDLE"
+ */
+export default function IntentPicker({ targetNumber, onCall, disabled = false }) {
   const [selected, setSelected] = useState("Casual");
   const [note, setNote] = useState("");
+  const [now, setNow] = useState("");
+  const [tz, setTz] = useState("");
+
+  useEffect(() => {
+    setTz(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const tick = () => setNow(formatTimeIn());
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const canCall = !disabled && !!targetNumber;
 
   return (
     <section aria-label="Choose why you are calling" className="w-full max-w-md text-slate-100">
@@ -56,6 +87,19 @@ export default function IntentPicker() {
           {note.length}/{MAX_NOTE}
         </p>
       </div>
+
+      <p className="mt-2 text-sm text-slate-400">
+        We will send your local time: {now} {tz && `(${tz})`}
+      </p>
+
+      <button
+        type="button"
+        disabled={!canCall}
+        onClick={() => onCall?.(buildIntent(selected, note))}
+        className="mt-5 w-full rounded-2xl bg-emerald-500 px-6 py-4 text-lg font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        {targetNumber ? `Call ${targetNumber}` : "Enter a number to call"}
+      </button>
     </section>
   );
 }

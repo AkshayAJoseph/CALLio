@@ -151,6 +151,18 @@ export function WebRTCProvider({ children }) {
         }
       };
 
+      // --- DATA CHANNEL SETUP ("cooee-channel") ---
+      // If we are the caller, we create the channel
+      if (callState === "CALLING" || callState === "IDLE") { // Caller initiates
+        const dc = pc.createDataChannel("cooee-channel", { ordered: true });
+        setupDataChannel(dc);
+      }
+      
+      // If we are the receiver, we wait for the channel
+      pc.ondatachannel = (event) => {
+        setupDataChannel(event.channel);
+      };
+
       // Get Local Audio
       let stream;
       try {
@@ -176,7 +188,44 @@ export function WebRTCProvider({ children }) {
     }
   };
 
-  // --- ACTION FUNCTIONS (STUBS FOR NOW) ---
+  const typingTimeoutRef = useRef(null);
+
+  const setupDataChannel = (dc) => {
+    dataChannelRef.current = dc;
+    dc.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "MODE_SWITCH") {
+          setNetworkMode(msg.mode);
+          if (localStreamRef.current) {
+            const audioTrack = localStreamRef.current.getAudioTracks()[0];
+            if (audioTrack) audioTrack.enabled = (msg.mode === "FULL_AUDIO");
+          }
+          setIsPTTTalking(false);
+          setIsRemotePTTTalking(false);
+        } else if (msg.type === "PTT_STATUS") {
+          setIsRemotePTTTalking(msg.talking);
+        } else if (msg.type === "TYPING_EVENT") {
+          setIsRemoteTyping(msg.isTyping);
+          setRemoteLiveDraft(msg.liveDraft);
+          
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsRemoteTyping(false);
+            setRemoteLiveDraft("");
+          }, 1500);
+        } else if (msg.type === "CHAT") {
+          setIsRemoteTyping(false);
+          setRemoteLiveDraft("");
+          setChatMessages(prev => [...prev, { sender: msg.sender, text: msg.text, time: msg.time }]);
+        }
+      } catch (e) {
+        console.error("DataChannel parse error:", e);
+      }
+    };
+  };
+
+  // --- ACTION FUNCTIONS (STUBS REPLACED) ---
   const registerNumber = (phoneNumberString) => {
     setMyNumber(phoneNumberString);
     if (socketRef.current?.connected) {
@@ -269,19 +318,57 @@ export function WebRTCProvider({ children }) {
   };
 
   const setFallbackMode = (mode) => {
-    console.log("setFallbackMode stub", mode);
+    setNetworkMode(mode);
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = (mode === "FULL_AUDIO");
+      }
+    }
+    setIsPTTTalking(false);
+    setIsRemotePTTTalking(false);
+
+    if (dataChannelRef.current?.readyState === "open") {
+      dataChannelRef.current.send(JSON.stringify({ type: "MODE_SWITCH", mode }));
+    }
   };
 
   const setPTTActive = (isHolding) => {
-    console.log("setPTTActive stub", isHolding);
+    setIsPTTTalking(isHolding);
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = isHolding;
+      }
+    }
+    if (dataChannelRef.current?.readyState === "open") {
+      dataChannelRef.current.send(JSON.stringify({ type: "PTT_STATUS", talking: isHolding }));
+    }
   };
 
   const handleTypingInput = (draftString) => {
-    console.log("handleTypingInput stub", draftString);
+    const isCurrentlyTyping = draftString.trim().length > 0;
+    if (dataChannelRef.current?.readyState === "open") {
+      dataChannelRef.current.send(JSON.stringify({
+        type: "TYPING_EVENT",
+        isTyping: isCurrentlyTyping,
+        liveDraft: isLiveDraftEnabled && isCurrentlyTyping ? draftString : ""
+      }));
+    }
   };
 
-  const sendTextFallback = (messageString) => {
-    console.log("sendTextFallback stub", messageString);
+  const sendTextFallback = (text) => {
+    const msgObj = {
+      sender: myNumber,
+      text,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+    setChatMessages(prev => [...prev, msgObj]);
+    
+    if (dataChannelRef.current?.readyState === "open") {
+      dataChannelRef.current.send(JSON.stringify({ type: "CHAT", ...msgObj }));
+      dataChannelRef.current.send(JSON.stringify({ type: "TYPING_EVENT", isTyping: false, liveDraft: "" }));
+    }
   };
 
   // The locked contract object

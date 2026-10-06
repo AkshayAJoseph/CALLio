@@ -5,7 +5,7 @@ import Link from "next/link";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
 import { useMockWebRTC } from "@/lib/mockWebRTC";
-import { CooeeLogo } from "@/components/CooeeLogo";
+import { NavBar } from "@/components/NavBar";
 import { playChime } from "@/lib/audio";
 
 // Official trusted guardian numbers
@@ -151,16 +151,12 @@ export default function DependentPortalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-[#173B63] flex flex-col justify-between selection:bg-[#7FB3E6] selection:text-[#173B63] font-sans antialiased p-4 sm:p-8 md:p-12">
-      {/* =================================================================== */}
-      {/* 1. REASSURING ACCESSIBLE HEADER WITH COOEE LOGO */}
-      {/* =================================================================== */}
-      <header className="border-b-2 border-[#DDE4EE] pb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          <Link href="/dependent" className="group">
-            <CooeeLogo size="lg" showTagline={true} theme="light" />
-          </Link>
+    <div className="min-h-screen bg-[#F8F9FB] text-[#173B63] flex flex-col justify-between selection:bg-[#7FB3E6] selection:text-[#173B63] font-sans antialiased">
+      <NavBar />
 
+      {/* Accessible portal identity section */}
+      <div className="px-4 sm:px-8 md:px-12 pt-6 pb-6 border-b-2 border-[#DDE4EE] flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-6">
           <div className="hidden sm:block h-12 w-px bg-[#DDE4EE]"></div>
 
           <div>
@@ -182,7 +178,7 @@ export default function DependentPortalPage() {
             <span className="text-base font-bold text-slate-600">Tablet Ready</span>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* =================================================================== */}
       {/* 2. TRUSTED AUTO-ANSWER INCOMING CALL BANNER (WHEN RINGING) */}

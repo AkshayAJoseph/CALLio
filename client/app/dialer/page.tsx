@@ -5,8 +5,8 @@ import Link from "next/link";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
 import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
-import { CooeeLogo } from "../../components/CooeeLogo";
-import { playDTMFTone, playChime } from "../../lib/audio";
+import { CooeeLogo } from "@/components/CooeeLogo";
+import { playDTMFTone, playChime } from "@/lib/audio";
 
 type CallIntent = "Just saying hello" | "Need to talk" | "Urgent" | "Emergency";
 
@@ -167,8 +167,10 @@ export default function WebDialerPage() {
   const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
   const [callDurationSec, setCallDurationSec] = useState<number>(0);
 
+  const normalizeForMatch = (num: string) => num.replace(/[\s\-\(\)]/g, "");
+
   const activeSIM =
-    AVAILABLE_SIMS.find((s) => s.number === myNumber) || AVAILABLE_SIMS[0];
+    AVAILABLE_SIMS.find((s) => normalizeForMatch(s.number) === myNumber) || AVAILABLE_SIMS[0];
 
   // Call duration counter
   useEffect(() => {
@@ -321,7 +323,7 @@ export default function WebDialerPage() {
                 </div>
                 <div className="mt-1 space-y-1">
                   {AVAILABLE_SIMS.map((sim) => {
-                    const isSelected = sim.number === myNumber;
+                    const isSelected = normalizeForMatch(sim.number) === myNumber;
                     return (
                       <button
                         key={sim.number}

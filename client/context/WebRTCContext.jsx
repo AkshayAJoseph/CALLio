@@ -102,12 +102,10 @@ export function WebRTCProvider({ children }) {
     socket.on("ice-candidate", async (data) => {
       // data: { from, candidate }
       const pc = peerConnectionRef.current;
-      if (pc) {
-        if (pc.remoteDescription && pc.remoteDescription.type) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
-        } else {
-          iceCandidateQueueRef.current.push(data.candidate);
-        }
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
+      } else {
+        iceCandidateQueueRef.current.push(data.candidate);
       }
     });
 

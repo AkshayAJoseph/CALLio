@@ -37,6 +37,7 @@ export default function ActiveCallView({ call, dialedNumber }) {
     remoteLiveDraft = "",
     remoteTypingText = "",
     peerConnectionRef = null,
+    remoteAudioRef = null,
     setFallbackMode,
     setPTTActive,
     sendTextFallback,
@@ -64,6 +65,15 @@ export default function ActiveCallView({ call, dialedNumber }) {
   }, []);
 
   // Telemetry numbers
+  const [iceState, setIceState] = useState("unknown");
+  useEffect(() => {
+    if(!peerConnectionRef?.current) return;
+    const pc = peerConnectionRef.current;
+    const update = () => setIceState(pc.iceConnectionState);
+    pc.addEventListener("iceconnectionstatechange", update);
+    update();
+    return () => pc.removeEventListener("iceconnectionstatechange", update);
+  }, [peerConnectionRef]);
   const { telemetry, source, setOverride, isOverridden, evaluatedLevel } =
     useNetworkStats({ peerConnectionRef, networkMode });
 
@@ -119,7 +129,7 @@ export default function ActiveCallView({ call, dialedNumber }) {
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 font-mono text-sm font-semibold text-slate-200">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-              <span>{formatSeconds(callDurationSec)}</span>
+              <span>{formatSeconds(callDurationSec)} (ICE: {iceState})</span>
             </div>
 
             {intentTag && (
@@ -211,7 +221,7 @@ export default function ActiveCallView({ call, dialedNumber }) {
         </button>
       </div>
 
-      <audio id="remoteAudio" autoPlay />
+      <audio id="remoteAudio" autoPlay ref={remoteAudioRef} />
 
       <NetworkSimulator
         isOverridden={isOverridden}

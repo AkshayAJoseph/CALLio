@@ -1,4 +1,5 @@
 # CALLio - Contextual Calling & Resilient Communications
+<img width="1600" height="639" alt="image" src="https://github.com/user-attachments/assets/608c6a31-2c28-4130-b1d1-6ebafd5006b6" />
 
 ## Abstract
 CALLio (formally known as Cooee Echo) is a revolutionary real-time communication platform engineered by Team 4A Battery (Helldivers). Built to tackle the critical issue of dropped calls under severe network degradation, CALLio implements a proprietary **"Zero-Crash Fallback Illusion."** 

@@ -140,9 +140,18 @@ export default function DependentPortalPage() {
   };
 
   const handleEndCall = () => {
-    setCallDuration(0);
-    endActiveCall();
-  };
+  setCallDuration(0);
+  endActiveCall();
+};
+
+const handleSOS = () => {
+  playChime(true);
+  startCall(trustedGuardians[0], "Urgent - Please Pick Up", {
+    isSOS: true,
+    priority: "HIGH",
+    triggeredBy: "self",
+  });
+};
 
   const formatCallDuration = (sec: number) => {
     const mins = Math.floor(sec / 60);
@@ -336,12 +345,17 @@ export default function DependentPortalPage() {
         <section className="rounded-3xl border-4 border-[#A7C957] bg-white p-6 sm:p-10 flex flex-col justify-between shadow-lg">
           <div className="flex items-center gap-6">
             {/* Contact Photo / High Contrast Avatar */}
-            <div className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-3xl bg-[#F2F7E6] text-6xl sm:text-7xl font-black shadow-md border-4 border-[#A7C957]">
-              👩
-              <span className="absolute -bottom-2 -right-2 rounded-full bg-[#A7C957] border-2 border-white px-2.5 py-0.5 text-xs font-black text-[#173B63]">
-                TRUSTED
-              </span>
-            </div>
+            <button
+  type="button"
+  onClick={handleSOS}
+  aria-label="Call Mum for help"
+  className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-3xl bg-[#F2F7E6] text-6xl sm:text-7xl font-black shadow-md border-4 border-[#A7C957] cursor-pointer active:scale-95 transition"
+>
+  👩
+  <span className="absolute -bottom-2 -right-2 rounded-full bg-[#A7C957] border-2 border-white px-2.5 py-0.5 text-xs font-black text-[#173B63]">
+    TRUSTED
+  </span>
+</button>
 
             <div>
               <p className="text-lg sm:text-xl font-bold uppercase tracking-wider text-[#4A6B1A]">
@@ -405,20 +419,23 @@ export default function DependentPortalPage() {
       </main>
 
       {/* =================================================================== */}
-      {/* 6. EMERGENCY ASSISTANCE BUTTON (HIGH VISIBILITY RED) */}
-      {/* =================================================================== */}
-      <div className="max-w-6xl mx-auto w-full mb-6">
-        <button
-          onClick={() => {
-            playChime(true);
-            startCall("000", "Emergency");
-          }}
-          className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-95 border-4 border-red-500 py-6 text-2xl sm:text-3xl font-black text-white shadow-lg transition flex items-center justify-center gap-4"
-        >
-          <span className="text-3xl">🚨</span>
-          <span>EMERGENCY HELP (CALL 000)</span>
-        </button>
-      </div>
+{/* 6. ONE-TAP SOS — CALL TRUSTED GUARDIAN */}
+{/* =================================================================== */}
+<div className="max-w-6xl mx-auto w-full mb-8 px-4">
+  <button
+    type="button"
+    onClick={handleSOS}
+    className="w-full rounded-3xl bg-red-600 hover:bg-red-700 active:scale-[0.98] border-4 border-red-500 py-8 sm:py-10 text-3xl sm:text-4xl lg:text-5xl font-black text-white shadow-xl transition flex items-center justify-center gap-4"
+    aria-label="Call guardian for help"
+  >
+    <span className="text-5xl sm:text-6xl">🆘</span>
+    <span>CALL FOR HELP</span>
+  </button>
+
+  <p className="text-center text-base sm:text-lg font-bold text-slate-500 mt-3">
+    One tap calls your trusted guardian immediately
+  </p>
+</div>
 
       {/* =================================================================== */}
       {/* 7. FOOTER & CAREGIVER NAVIGATION */}

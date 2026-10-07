@@ -73,3 +73,15 @@ export const isLateNight = (tz) => {
   const h = hourIn(tz);
   return h !== null && (h < 7 || h >= 22);
 };
+
+export function buildIntent(tag: any, note: string) {
+  const i = INTENTS[tag as keyof typeof INTENTS] || INTENTS.Casual;
+  const d = new Date();
+  return {
+    intentTag: i.label,
+    priority: i.priority,
+    note: note.trim(),
+    callerTime: d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }),
+    callerTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
+}

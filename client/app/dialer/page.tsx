@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
-import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
+import { useWebRTC } from "../../hooks/useWebRTC";
+import { buildIntent } from "../../utils/intents";
 import ActiveCallView from "../../components/call/ActiveCallView";
 import { CooeeLogo } from "@/components/CooeeLogo";
 import { playDTMFTone, playChime } from "@/lib/audio";
@@ -159,11 +160,12 @@ export default function WebDialerPage() {
     answerIncomingCall,
     endActiveCall,
     simulateIncomingCall,
-  } = useMockWebRTC();
-  const webrtc = useMockWebRTC();
+  } = useWebRTC();
+  const webrtc = useWebRTC();
 
   const [inputNumber, setInputNumber] = useState<string>("");
-  const [selectedIntent, setSelectedIntent] = useState<any>(null);
+  const [selectedIntent, setSelectedIntent] = useState<CallIntent>("Just saying hello");
+  const [note, setNote] = useState<string>("");
   const [simMenuOpen, setSimMenuOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
@@ -215,7 +217,7 @@ export default function WebDialerPage() {
     if (!target) return;
     setCallDurationSec(0);
     playChime(true);
-    startCall(target, selectedIntent || { intentTag: "Casual", priority: "LOW" });
+    startCall(target, buildIntent(selectedIntent, note));
   };
 
   const handleEndCall = () => {
@@ -593,10 +595,10 @@ export default function WebDialerPage() {
 
               {/* Informative helper note for selected intent */}
               <div className="mt-3 px-3.5 py-2.5 rounded-2xl bg-[#F8F9FB] border border-[#E2E8F0] text-[11px] text-slate-600 flex items-center gap-2.5">
-                <span className="text-base">{selectedIntent?.icon || "?"}</span>
+                <span className="text-base">{INTENT_CONFIG[selectedIntent].icon}</span>
                 <span>
                   <strong className="text-[#173B63]">Intent Note:</strong>{" "}
-                  {selectedIntent?.note || ""}
+                  <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder={INTENT_CONFIG[selectedIntent].description} className="bg-transparent border-none outline-none w-full text-slate-700" />
                 </span>
               </div>
             </div>
@@ -634,11 +636,11 @@ export default function WebDialerPage() {
                 onClick={handleInitiateCall}
                 disabled={!inputNumber}
                 className={`flex-2 flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-base shadow-md transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
-                  selectedIntent?.priority === "HIGH" ? "bg-red-600 hover:bg-red-700 text-white" : selectedIntent?.priority === "MEDIUM" ? "bg-amber-500 hover:bg-amber-600 text-slate-950" : "bg-[#A7C957] hover:bg-[#92b543] text-[#173B63]"
+                  INTENT_CONFIG[selectedIntent].btnColor
                 }`}
               >
                 <span className="text-xl">📞</span>
-                <span>Call {selectedIntent?.intentTag || ""}</span>
+                <span>Call {selectedIntent}</span>
               </button>
 
               <button
@@ -664,7 +666,7 @@ export default function WebDialerPage() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-6 bg-white/10 border border-white/20">
               <span>{INTENT_CONFIG[selectedIntent].icon}</span>
               <span className="text-white">
-                Intent: {incomingCall ? incomingCall.intentTag : selectedIntent?.intentTag || "Casual"}
+                Intent: {incomingCall ? incomingCall.intentTag : selectedIntent}
               </span>
             </div>
 

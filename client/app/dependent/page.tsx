@@ -7,6 +7,7 @@ import ActiveCallView from "../../components/call/ActiveCallView";
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
 import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
 import { CooeeLogo } from "@/components/CooeeLogo";
+import EnableAlertsButton from "../../components/EnableAlertsButton";
 import { playChime } from "@/lib/audio";
 
 // Official trusted guardian numbers

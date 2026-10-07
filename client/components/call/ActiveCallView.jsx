@@ -105,7 +105,7 @@ export default function ActiveCallView({ call, dialedNumber }) {
   return (
     <section
       aria-label="Active call"
-      className="min-h-screen bg-slate-950 px-4 pb-72 pt-6 text-white"
+      className="fixed inset-0 z-50 min-h-screen bg-slate-950 px-4 pb-72 pt-6 text-white overflow-y-auto"
     >
       <div className="mx-auto flex max-w-xl flex-col gap-6">
         {/* Header row: telemetry HUD, call timer and intent badge */}

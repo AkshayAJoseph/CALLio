@@ -30,7 +30,7 @@ app.get("/health", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log(`[Cooee Echo] Client connected: ${socket.id}`);
+  console.log(`[CALLio] Client connected: ${socket.id}`);
 
   // Register a virtual number to this socket
   socket.on("register", (phoneNumber) => {
@@ -42,7 +42,7 @@ io.on("connection", (socket) => {
     
     phonebook.set(phoneNumber, socket.id);
     reversePhonebook.set(socket.id, phoneNumber);
-    console.log(`[Cooee Echo] Registered ${phoneNumber} to ${socket.id}`);
+    console.log(`[CALLio] Registered ${phoneNumber} to ${socket.id}`);
     
     // Broadcast updated list to everyone
     io.emit("online-numbers", Array.from(phonebook.keys()));
@@ -54,10 +54,10 @@ io.on("connection", (socket) => {
   socket.on("call-user", ({ to, from, intentObject, offer }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(`[Cooee Echo] Call from ${from} to ${to}`);
+      console.log(`[CALLio] Call from ${from} to ${to}`);
       io.to(targetSocketId).emit("incoming-call", { from, to, intentObject, offer });
     } else {
-      console.log(`[Cooee Echo] Call failed: ${to} is not registered`);
+      console.log(`[CALLio] Call failed: ${to} is not registered`);
       socket.emit("call-error", { message: "Number offline or not registered" });
     }
   });
@@ -66,7 +66,7 @@ io.on("connection", (socket) => {
   socket.on("answer-call", ({ to, from, answer }) => {
     const targetSocketId = phonebook.get(to); // "to" here is the original caller
     if (targetSocketId) {
-      console.log(`[Cooee Echo] Call answered by ${from}`);
+      console.log(`[CALLio] Call answered by ${from}`);
       io.to(targetSocketId).emit("call-accepted", { from, answer });
     }
   });
@@ -83,7 +83,7 @@ io.on("connection", (socket) => {
   socket.on("end-call", ({ to, from }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(`[Cooee Echo] Call ended by ${from}`);
+      console.log(`[CALLio] Call ended by ${from}`);
       io.to(targetSocketId).emit("call-ended", { from });
     }
   });
@@ -94,17 +94,17 @@ io.on("connection", (socket) => {
     if (phoneNumber) {
       phonebook.delete(phoneNumber);
       reversePhonebook.delete(socket.id);
-      console.log(`[Cooee Echo] Unregistered ${phoneNumber} (${socket.id})`);
+      console.log(`[CALLio] Unregistered ${phoneNumber} (${socket.id})`);
       
       // Broadcast updated list to everyone
       io.emit("online-numbers", Array.from(phonebook.keys()));
     }
-    console.log(`[Cooee Echo] Client disconnected: ${socket.id}`);
+    console.log(`[CALLio] Client disconnected: ${socket.id}`);
   });
 });
 
 const PORT = process.env.PORT || 4000;
 
 server.listen(PORT, () => {
-  console.log(`[Cooee Echo] Signaling Server running on port ${PORT}`);
+  console.log(`[CALLio] Signaling Server running on port ${PORT}`);
 });

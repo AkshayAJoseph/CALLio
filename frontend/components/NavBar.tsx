@@ -44,7 +44,7 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: "Dependent",
+    label: "Emergency Mode",
     href: "/dependent",
     icon: (
       <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
@@ -63,7 +63,7 @@ const NAV_ITEMS: NavItem[] = [
       <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
         <path
           fillRule="evenodd"
-          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a77 0 1114 0H3z"
           clipRule="evenodd"
         />
       </svg>
@@ -85,6 +85,7 @@ export function NavBar() {
       <nav className="flex items-center gap-1">
         {NAV_ITEMS.map(({ label, href, icon }) => {
           const active = pathname === href;
+
           return (
             <Link
               key={href}

@@ -5,13 +5,19 @@ import { NavBar } from "@/components/NavBar";
 import { useMockWebRTC } from "@/lib/mockWebRTC";
 import { playChime } from "@/lib/audio";
 
-type Relationship = "Family" | "Friend" | "Doctor" | "Guardian" | "Other";
+type Relationship =
+  | "Family"
+  | "Friend"
+  | "Doctor"
+  | "Guardian"
+  | "Other";
 
 type CallIntent =
   | "Just saying hello"
   | "Need to talk"
   | "Urgent"
-  | "Emergency";
+  | "Emergency"
+  | "Custom";
 
 type Contact = {
   id: string;
@@ -110,6 +116,14 @@ const CALL_INTENTS: {
     bg: "bg-red-50",
     border: "border-red-400",
   },
+  {
+    value: "Custom",
+    label: "Custom",
+    description: "Tell them exactly what you need",
+    color: "text-[#2B6CB0]",
+    bg: "bg-[#EBF4FC]",
+    border: "border-[#7FB3E6]",
+  },
 ];
 
 export default function ContactsPage() {
@@ -121,29 +135,42 @@ export default function ContactsPage() {
     endActiveCall,
   } = useMockWebRTC();
 
-  const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
+  const [contacts, setContacts] =
+    useState<Contact[]>(INITIAL_CONTACTS);
+
   const [search, setSearch] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Call intent picker
-  const [showIntentPicker, setShowIntentPicker] = useState(false);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(
-    null
-  );
+  const [showIntentPicker, setShowIntentPicker] =
+    useState(false);
+
+  const [selectedContact, setSelectedContact] =
+    useState<Contact | null>(null);
+
   const [selectedIntent, setSelectedIntent] =
     useState<CallIntent>("Just saying hello");
 
+  // Custom intent entered by the user
+  const [customIntent, setCustomIntent] = useState("");
+
   // Used to display the person's name during an outgoing call
-  const [activeContactName, setActiveContactName] = useState("");
+  const [activeContactName, setActiveContactName] =
+    useState("");
 
   // Add contact form
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+
   const [newRelationship, setNewRelationship] =
     useState<Relationship>("Family");
-  const [newTrustedGuardian, setNewTrustedGuardian] = useState(false);
-  const [newPhoto, setNewPhoto] = useState<string | undefined>(undefined);
+
+  const [newTrustedGuardian, setNewTrustedGuardian] =
+    useState(false);
+
+  const [newPhoto, setNewPhoto] =
+    useState<string | undefined>(undefined);
 
   const filteredContacts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -162,6 +189,7 @@ export default function ContactsPage() {
   const handleCall = (contact: Contact) => {
     setSelectedContact(contact);
     setSelectedIntent(contact.intent);
+    setCustomIntent("");
     setShowIntentPicker(true);
   };
 
@@ -169,19 +197,29 @@ export default function ContactsPage() {
   const confirmCall = () => {
     if (!selectedContact) return;
 
+    const intentToSend =
+      selectedIntent === "Custom"
+        ? customIntent.trim()
+        : selectedIntent;
+
+    // Do not allow an empty custom intent.
+    if (!intentToSend) return;
+
     playChime(true);
 
     setActiveContactName(selectedContact.name);
 
-    startCall(selectedContact.phone, selectedIntent);
+    startCall(selectedContact.phone, intentToSend);
 
     setShowIntentPicker(false);
     setSelectedContact(null);
+    setCustomIntent("");
   };
 
   const cancelIntentPicker = () => {
     setShowIntentPicker(false);
     setSelectedContact(null);
+    setCustomIntent("");
   };
 
   const handleEndCall = () => {
@@ -189,7 +227,9 @@ export default function ContactsPage() {
     setActiveContactName("");
   };
 
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -245,18 +285,23 @@ export default function ContactsPage() {
       trustedGuardian: newTrustedGuardian,
       initials,
       avatarClass,
-      intent: newTrustedGuardian ? "Urgent" : "Just saying hello",
+      intent: newTrustedGuardian
+        ? "Urgent"
+        : "Just saying hello",
       autoAnswer: newTrustedGuardian,
       photo: newPhoto,
     };
 
     setContacts((prev) => [...prev, newContact]);
+
     resetAddForm();
     setShowAddModal(false);
   };
 
   const handleDeleteContact = (id: string) => {
-    setContacts((prev) => prev.filter((contact) => contact.id !== id));
+    setContacts((prev) =>
+      prev.filter((contact) => contact.id !== id)
+    );
   };
 
   const displayCallName =
@@ -265,20 +310,20 @@ export default function ContactsPage() {
       : activeContactName || "Contact";
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-slate-900 font-sans antialiased">
+    <div className="min-h-screen bg-[#F8F9FB] font-sans text-slate-900 antialiased">
       <NavBar />
 
-      {/* ================================================================ */}
-      {/* ACTIVE CALL OVERLAY */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          ACTIVE CALL OVERLAY
+          ================================================================ */}
       {callState !== "IDLE" && callState !== "ENDED" && (
-        <div className="fixed inset-0 z-50 bg-[#173B63]/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-[#173B63] border border-white/20 p-8 shadow-2xl text-center text-white">
-            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#1E4670] border-2 border-[#7FB3E6]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#173B63]/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/20 bg-[#173B63] p-8 text-center text-white shadow-2xl">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#7FB3E6] bg-[#1E4670]">
               <span className="text-4xl">📞</span>
             </div>
 
-            <p className="text-sm font-bold uppercase tracking-wider text-[#A7C957] mb-2">
+            <p className="mb-2 text-sm font-bold uppercase tracking-wider text-[#A7C957]">
               {callState === "CALLING"
                 ? "Calling"
                 : callState === "CONNECTED"
@@ -288,15 +333,17 @@ export default function ContactsPage() {
                     : callState}
             </p>
 
-            <h2 className="text-3xl font-black mb-3">
+            <h2 className="mb-3 text-3xl font-black">
               {displayCallName}
             </h2>
 
-            <p className="text-sm text-slate-300 mb-8">
+            <p className="mb-8 text-sm text-slate-300">
               {callState === "CALLING"
                 ? "Connecting your call..."
                 : callState === "CONNECTED"
-                  ? `You are now connected with ${activeContactName || "the caller"}.`
+                  ? `You are now connected with ${
+                      activeContactName || "the caller"
+                    }.`
                   : callState === "RINGING"
                     ? "Someone is calling you."
                     : "Call in progress"}
@@ -307,7 +354,7 @@ export default function ContactsPage() {
                 <button
                   type="button"
                   onClick={answerIncomingCall}
-                  className="flex-1 rounded-2xl bg-[#A7C957] hover:bg-[#95B846] py-4 font-black text-[#173B63] transition"
+                  className="flex-1 rounded-2xl bg-[#A7C957] py-4 font-black text-[#173B63] transition hover:bg-[#95B846]"
                 >
                   ✓ ANSWER
                 </button>
@@ -316,18 +363,21 @@ export default function ContactsPage() {
               <button
                 type="button"
                 onClick={handleEndCall}
-                className="flex-1 rounded-2xl bg-red-600 hover:bg-red-700 py-4 font-black text-white transition"
+                className="flex-1 rounded-2xl bg-red-600 py-4 font-black text-white transition hover:bg-red-700"
               >
-                ✕ {callState === "CONNECTED" ? "END CALL" : "CANCEL"}
+                ✕{" "}
+                {callState === "CONNECTED"
+                  ? "END CALL"
+                  : "CANCEL"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ================================================================ */}
-      {/* CALL INTENT PICKER */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          CALL INTENT PICKER
+          ================================================================ */}
       {showIntentPicker && selectedContact && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#173B63]/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
@@ -347,13 +397,22 @@ export default function ContactsPage() {
 
             <div className="space-y-3">
               {CALL_INTENTS.map((intent) => {
-                const isSelected = selectedIntent === intent.value;
+                const isSelected =
+                  selectedIntent === intent.value;
 
                 return (
                   <button
                     key={intent.value}
                     type="button"
-                    onClick={() => setSelectedIntent(intent.value)}
+                    onClick={() => {
+                      setSelectedIntent(intent.value);
+
+                      // Clear the previous custom text when
+                      // switching away from Custom.
+                      if (intent.value !== "Custom") {
+                        setCustomIntent("");
+                      }
+                    }}
                     className={`w-full rounded-2xl border-2 p-4 text-left transition ${
                       isSelected
                         ? `${intent.bg} ${intent.border} shadow-sm`
@@ -394,6 +453,37 @@ export default function ContactsPage() {
               })}
             </div>
 
+            {/* ============================================================
+                CUSTOM INTENT TEXTBOX
+                ============================================================ */}
+            {selectedIntent === "Custom" && (
+              <div className="mt-4">
+                <label
+                  htmlFor="custom-intent"
+                  className="mb-2 block text-sm font-bold text-[#173B63]"
+                >
+                  What would you like to tell them?
+                </label>
+
+                <textarea
+                  id="custom-intent"
+                  value={customIntent}
+                  onChange={(event) =>
+                    setCustomIntent(event.target.value)
+                  }
+                  placeholder="Type your reason for calling..."
+                  rows={3}
+                  maxLength={200}
+                  autoFocus
+                  className="w-full resize-none rounded-2xl border-2 border-[#DDE4EE] bg-white px-4 py-3 text-sm text-[#173B63] outline-none transition placeholder:text-slate-400 focus:border-[#2B6CB0] focus:ring-2 focus:ring-[#2B6CB0]/10"
+                />
+
+                <div className="mt-1 text-right text-xs text-slate-400">
+                  {customIntent.length}/200
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
@@ -406,7 +496,11 @@ export default function ContactsPage() {
               <button
                 type="button"
                 onClick={confirmCall}
-                className="flex-1 rounded-2xl bg-[#2B6CB0] py-4 font-black text-white transition hover:bg-[#235891] active:scale-95"
+                disabled={
+                  selectedIntent === "Custom" &&
+                  customIntent.trim().length === 0
+                }
+                className="flex-1 rounded-2xl bg-[#2B6CB0] py-4 font-black text-white transition hover:bg-[#235891] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Call {selectedContact.name}
               </button>
@@ -415,9 +509,9 @@ export default function ContactsPage() {
         </div>
       )}
 
-      {/* ================================================================ */}
-      {/* PAGE HEADER */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          PAGE HEADER
+          ================================================================ */}
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <section className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -440,31 +534,38 @@ export default function ContactsPage() {
           </button>
         </section>
 
-        {/* ================================================================ */}
-        {/* SEARCH */}
-        {/* ================================================================ */}
+        {/* ================================================================
+            SEARCH
+            ================================================================ */}
         <div className="mb-6">
-          <label htmlFor="contact-search" className="sr-only">
+          <label
+            htmlFor="contact-search"
+            className="sr-only"
+          >
             Search contacts
           </label>
 
           <div className="flex items-center rounded-2xl border border-[#DDE4EE] bg-white px-4 shadow-sm">
-            <span className="mr-3 text-lg text-[#7FB3E6]">⌕</span>
+            <span className="mr-3 text-lg text-[#7FB3E6]">
+              ⌕
+            </span>
 
             <input
               id="contact-search"
               type="text"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
               placeholder="Search contacts by name, number, or relationship..."
               className="w-full bg-transparent py-3.5 text-sm text-[#173B63] outline-none placeholder:text-slate-400"
             />
           </div>
         </div>
 
-        {/* ================================================================ */}
-        {/* CONTACT GRID */}
-        {/* ================================================================ */}
+        {/* ================================================================
+            CONTACT GRID
+            ================================================================ */}
         {filteredContacts.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-2">
             {filteredContacts.map((contact) => (
@@ -539,7 +640,9 @@ export default function ContactsPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleDeleteContact(contact.id)}
+                      onClick={() =>
+                        handleDeleteContact(contact.id)
+                      }
                       aria-label={`Delete ${contact.name}`}
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 active:scale-95"
                     >
@@ -552,7 +655,9 @@ export default function ContactsPage() {
           </section>
         ) : (
           <div className="rounded-3xl border border-dashed border-[#DDE4EE] bg-white p-12 text-center">
-            <p className="font-bold text-[#173B63]">No contacts found</p>
+            <p className="font-bold text-[#173B63]">
+              No contacts found
+            </p>
 
             <p className="mt-1 text-sm text-slate-500">
               Try another search.
@@ -561,9 +666,9 @@ export default function ContactsPage() {
         )}
       </main>
 
-      {/* ================================================================ */}
-      {/* ADD CONTACT MODAL */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          ADD CONTACT MODAL
+          ================================================================ */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#173B63]/60 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
@@ -597,7 +702,7 @@ export default function ContactsPage() {
                 <img
                   src={newPhoto}
                   alt="Selected profile preview"
-                  className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-lg"
                 />
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#EBF4FC] text-2xl font-black text-[#2B6CB0]">
@@ -630,7 +735,9 @@ export default function ContactsPage() {
                 <input
                   id="new-contact-name"
                   value={newName}
-                  onChange={(event) => setNewName(event.target.value)}
+                  onChange={(event) =>
+                    setNewName(event.target.value)
+                  }
                   placeholder="Enter name"
                   className="w-full rounded-xl border border-[#DDE4EE] px-4 py-3 outline-none focus:border-[#2B6CB0] focus:ring-2 focus:ring-[#2B6CB0]/10"
                 />
@@ -648,7 +755,9 @@ export default function ContactsPage() {
                 <input
                   id="new-contact-phone"
                   value={newPhone}
-                  onChange={(event) => setNewPhone(event.target.value)}
+                  onChange={(event) =>
+                    setNewPhone(event.target.value)
+                  }
                   placeholder="+61 480 000 111"
                   className="w-full rounded-xl border border-[#DDE4EE] px-4 py-3 font-mono outline-none focus:border-[#2B6CB0] focus:ring-2 focus:ring-[#2B6CB0]/10"
                 />
@@ -667,7 +776,9 @@ export default function ContactsPage() {
                   id="new-contact-relationship"
                   value={newRelationship}
                   onChange={(event) =>
-                    setNewRelationship(event.target.value as Relationship)
+                    setNewRelationship(
+                      event.target.value as Relationship
+                    )
                   }
                   className="w-full rounded-xl border border-[#DDE4EE] bg-white px-4 py-3 outline-none focus:border-[#2B6CB0]"
                 >
@@ -685,7 +796,9 @@ export default function ContactsPage() {
                   type="checkbox"
                   checked={newTrustedGuardian}
                   onChange={(event) =>
-                    setNewTrustedGuardian(event.target.checked)
+                    setNewTrustedGuardian(
+                      event.target.checked
+                    )
                   }
                   className="h-5 w-5 accent-[#2B6CB0]"
                 />
@@ -696,7 +809,8 @@ export default function ContactsPage() {
                   </p>
 
                   <p className="text-xs text-slate-500">
-                    Enables trusted-guardian behavior such as auto-answer.
+                    Enables trusted-guardian behavior such as
+                    auto-answer.
                   </p>
                 </div>
               </label>
@@ -718,7 +832,9 @@ export default function ContactsPage() {
               <button
                 type="button"
                 onClick={handleAddContact}
-                disabled={!newName.trim() || !newPhone.trim()}
+                disabled={
+                  !newName.trim() || !newPhone.trim()
+                }
                 className="flex-1 rounded-2xl bg-[#2B6CB0] py-3.5 font-bold text-white transition hover:bg-[#235891] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Save Contact

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import NetworkSimulator from "./NetworkSimulator";
+import PTTControl from "./PTTControl";
+import TextFallbackPanel from "./TextFallbackPanel";
 import TelemetryHUD from "./TelemetryHUD";
 import { useNetworkStats } from "./useNetworkStats";
 
@@ -21,9 +23,16 @@ export default function ActiveCallView({ call, dialedNumber }) {
   const {
     networkMode = "FULL_AUDIO",
     incomingCall = null,
+    isPTTTalking = false,
     isRemotePTTTalking = false,
+    myNumber = "",
+    chatMessages = [],
+    remoteTypingText = "",
     peerConnectionRef = null,
     setFallbackMode,
+    setPTTActive,
+    sendTextFallback,
+    sendLiveTyping,
     endActiveCall,
   } = call ?? {};
 
@@ -52,6 +61,9 @@ export default function ActiveCallView({ call, dialedNumber }) {
       setFallbackMode?.(evaluatedLevel);
     }
   }, [evaluatedLevel, setFallbackMode]);
+
+  // The chat draft lives here so it survives switching away from TEXT and back.
+  const [draft, setDraft] = useState("");
 
   // Mode change toast. The first render never shows one.
   const [toast, setToast] = useState("");
@@ -124,23 +136,27 @@ export default function ActiveCallView({ call, dialedNumber }) {
           {networkMode === "PTT" && (
             <div className="flex flex-col items-center gap-4 text-center">
               <h3 className="text-2xl font-semibold">Push to Talk</h3>
-              <p className="text-lg text-slate-400">
-                The walkie talkie button goes here.
-              </p>
-              {isRemotePTTTalking && (
-                <p className="rounded-full border border-amber-500 px-4 py-2 text-lg font-semibold text-amber-400">
-                  Partner is talking
-                </p>
-              )}
+              <PTTControl
+                networkMode={networkMode}
+                isPTTTalking={isPTTTalking}
+                isRemotePTTTalking={isRemotePTTTalking}
+                setPTTActive={setPTTActive}
+              />
             </div>
           )}
 
           {networkMode === "TEXT" && (
             <div className="flex flex-col items-center gap-4 text-center">
               <h3 className="text-2xl font-semibold">Live text</h3>
-              <p className="text-lg text-slate-400">
-                The chat panel goes here.
-              </p>
+              <TextFallbackPanel
+                chatMessages={chatMessages}
+                remoteTypingText={remoteTypingText}
+                myNumber={myNumber}
+                draft={draft}
+                onDraftChange={setDraft}
+                sendTextFallback={sendTextFallback}
+                sendLiveTyping={sendLiveTyping}
+              />
             </div>
           )}
         </div>

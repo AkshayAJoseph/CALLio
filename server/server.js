@@ -30,7 +30,7 @@ app.get("/health", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log(`[CALLio] Client connected: ${socket.id}`);
+  console.log(`\n\x1b[36m[WS-CONNECT]\x1b[0m >> New websocket connection established: ${socket.id}`);
 
   // Register a virtual number to this socket
   socket.on("register", (phoneNumber) => {
@@ -42,7 +42,7 @@ io.on("connection", (socket) => {
     
     phonebook.set(phoneNumber, socket.id);
     reversePhonebook.set(socket.id, phoneNumber);
-    console.log(`[CALLio] Registered ${phoneNumber} to ${socket.id}`);
+    console.log(`\x1b[32m[REGISTER]\x1b[0m >> Device online: ${phoneNumber} (ID: ${socket.id})`);
     
     // Broadcast updated list to everyone
     io.emit("online-numbers", Array.from(phonebook.keys()));
@@ -54,7 +54,7 @@ io.on("connection", (socket) => {
   socket.on("call-user", ({ to, from, intentObject, offer }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(`[CALLio] Call from ${from} to ${to}`);
+      console.log(`\x1b[35m[SIP-INVITE]\x1b[0m >> Call initiated:\n    +- From: ${from}\n    +- To: ${to}\n    +- Status: Routing SDP Offer...`);
       io.to(targetSocketId).emit("incoming-call", { from, to, intentObject, offer });
     } else {
       console.log(`[CALLio] Call failed: ${to} is not registered`);
@@ -66,7 +66,7 @@ io.on("connection", (socket) => {
   socket.on("answer-call", ({ to, from, answer }) => {
     const targetSocketId = phonebook.get(to); // "to" here is the original caller
     if (targetSocketId) {
-      console.log(`[CALLio] Call answered by ${from}`);
+      console.log(`\x1b[32m[SIP-ACCEPT]\x1b[0m >> Call answered by ${from}. Routing SDP Answer...`);
       io.to(targetSocketId).emit("call-accepted", { from, answer });
     }
   });
@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", ({ to, from, candidate }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(`\x1b[33m[ICE-TRICKLE]\x1b[0m ?? Routing network candidate from ${from} to ${to}...`);
+      console.log(`\x1b[33m[ICE-TRICKLE]\x1b[0m >> Routing network candidate from ${from} to ${to}...`);
       io.to(targetSocketId).emit("ice-candidate", { from, candidate });
     }
   });
@@ -84,7 +84,7 @@ io.on("connection", (socket) => {
   socket.on("end-call", ({ to, from }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(`[CALLio] Call ended by ${from}`);
+      console.log(`\x1b[31m[SIP-BYE]\x1b[0m >> Call terminated by ${from}. Tear down initiated.`);
       io.to(targetSocketId).emit("call-ended", { from });
     }
   });

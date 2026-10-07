@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-// TEMPORARY UI DEVELOPMENT MOCK:
-// Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
-import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
+import { useWebRTC } from "../../hooks/useWebRTC";
 import { CooeeLogo } from "@/components/CooeeLogo";
 import { playChime } from "@/lib/audio";
 
@@ -23,7 +21,7 @@ export default function DependentPortalPage() {
     answerIncomingCall,
     endActiveCall,
     simulateIncomingCall,
-  } = useMockWebRTC();
+  } = useWebRTC();
 
   // Auto-answer timer and state
   const [countdown, setCountdown] = useState<number>(3);

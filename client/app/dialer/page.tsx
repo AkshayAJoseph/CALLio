@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-// TEMPORARY UI DEVELOPMENT MOCK:
-// Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
-import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
+import { useWebRTC } from "../../hooks/useWebRTC";
 import { CooeeLogo } from "@/components/CooeeLogo";
 import { playDTMFTone, playChime } from "@/lib/audio";
+import ActiveCallView from "@/components/call/ActiveCallView";
 
 type CallIntent = "Just saying hello" | "Need to talk" | "Urgent" | "Emergency";
 
@@ -147,6 +146,7 @@ const INTENT_CONFIG: Record<
 };
 
 export default function WebDialerPage() {
+  const webRTC = useWebRTC();
   const {
     myNumber,
     callState,
@@ -158,7 +158,7 @@ export default function WebDialerPage() {
     answerIncomingCall,
     endActiveCall,
     simulateIncomingCall,
-  } = useMockWebRTC();
+  } = webRTC;
 
   const [inputNumber, setInputNumber] = useState<string>("");
   const [selectedIntent, setSelectedIntent] = useState<CallIntent>("Just saying hello");
@@ -652,9 +652,15 @@ export default function WebDialerPage() {
       </main>
 
       {/* =================================================================== */}
-      {/* 3. ACTIVE CALL MODAL / OVERLAY (COOEE BRANDED NAVY / BLUE CARD) */}
+      {/* 3. ACTIVE CALL MODAL / OVERLAY & CONNECTED FALLBACK VIEW */}
       {/* =================================================================== */}
-      {callState !== "IDLE" && callState !== "ENDED" && (
+      {callState === "CONNECTED" && (
+        <div className="fixed inset-0 z-50 bg-slate-950 overflow-y-auto">
+          <ActiveCallView call={webRTC} dialedNumber={inputNumber} />
+        </div>
+      )}
+
+      {(callState === "CALLING" || callState === "RINGING") && (
         <div className="fixed inset-0 z-50 bg-[#173B63]/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-3xl bg-[#173B63] border border-white/20 p-8 shadow-2xl text-center text-white animate-in fade-in zoom-in-95 duration-150">
             {/* Intent Badge */}
@@ -680,8 +686,6 @@ export default function WebDialerPage() {
             <p className="text-sm font-semibold text-[#A7C957] mb-2">
               {callState === "CALLING"
                 ? "Connecting WebRTC session..."
-                : callState === "CONNECTED"
-                ? `In Call • ${formatSeconds(callDurationSec)}`
                 : callState === "RINGING"
                 ? "Ringing..."
                 : callState}

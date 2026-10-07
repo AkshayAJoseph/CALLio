@@ -5,8 +5,8 @@ import Link from "next/link";
 import ActiveCallView from "../../components/call/ActiveCallView";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
-import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
-import { CooeeLogo } from "@/components/CooeeLogo";
+import { useWebRTC } from "../../hooks/useWebRTC";
+import { CALLioLogo } from "@/components/CALLioLogo";
 import EnableAlertsButton from "../../components/EnableAlertsButton";
 import { playChime } from "@/lib/audio";
 
@@ -25,8 +25,14 @@ export default function DependentPortalPage() {
     answerIncomingCall,
     endActiveCall,
     simulateIncomingCall,
-  } = useMockWebRTC();
-  const webrtc = useMockWebRTC();
+    registerNumber
+  } = useWebRTC();
+
+  // Force dependent to register as its known number
+  useEffect(() => {
+    registerNumber("+61480000111");
+  }, [registerNumber]);
+  const webrtc = useWebRTC();
 
   // Auto-answer timer and state
   const [countdown, setCountdown] = useState<number>(3);
@@ -161,7 +167,7 @@ export default function DependentPortalPage() {
       <header className="border-b-2 border-[#DDE4EE] pb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <Link href="/dependent" className="group">
-            <CooeeLogo size="lg" showTagline={true} theme="light" />
+            <CALLioLogo size="lg" showTagline={true} theme="light" />
           </Link>
 
           <div className="hidden sm:block h-12 w-px bg-[#DDE4EE]"></div>
@@ -433,7 +439,7 @@ export default function DependentPortalPage() {
       {/* =================================================================== */}
       <footer className="border-t-2 border-[#DDE4EE] pt-4 flex flex-wrap items-center justify-between text-xs text-slate-500">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-[#173B63]">Cooee Dependent Mode</span>
+          <span className="font-bold text-[#173B63]">CALLio Dependent Mode</span>
           <span>•</span>
           <span>Tablet Simplified Screen</span>
         </div>

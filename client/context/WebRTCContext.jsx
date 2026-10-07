@@ -51,6 +51,10 @@ export function WebRTCProvider({ children }) {
     }
 
     socketRef.current = io(SOCKET_URL, {
+      transports: ["websocket"], // Force pure WebSocket
+        extraHeaders: {
+          "Bypass-Tunnel-Reminder": "true"
+        },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -173,10 +177,10 @@ export function WebRTCProvider({ children }) {
         }
       };
 
-      // --- DATA CHANNEL SETUP ("cooee-channel") ---
+      // --- DATA CHANNEL SETUP ("callio-channel") ---
       // If we are the caller, we create the channel
       if (callState === "CALLING" || callState === "IDLE") { // Caller initiates
-        const dc = pc.createDataChannel("cooee-channel", { ordered: true });
+        const dc = pc.createDataChannel("callio-channel", { ordered: true });
         setupDataChannel(dc);
       }
       

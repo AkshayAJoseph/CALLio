@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { buildIntent } from "../../utils/intents";
 import ActiveCallView from "../../components/call/ActiveCallView";
-import { CooeeLogo } from "@/components/CooeeLogo";
+import { CALLioLogo } from "@/components/CALLioLogo";
 import { playDTMFTone, playChime } from "@/lib/audio";
 
 type CallIntent = "Just saying hello" | "Need to talk" | "Urgent" | "Emergency";
@@ -26,14 +26,14 @@ const AVAILABLE_SIMS: VirtualSIM[] = [
     country: "Australia",
     flag: "🇦🇺",
     label: "Sydney Core (Primary eSIM)",
-    carrier: "Cooee AU",
+    carrier: "CALLio AU",
   },
   {
     number: "+44 770 000 222",
     country: "United Kingdom",
     flag: "🇬🇧",
     label: "London Gateway (Roaming eSIM)",
-    carrier: "Cooee UK Global",
+    carrier: "CALLio UK Global",
   },
 ];
 
@@ -254,7 +254,7 @@ export default function WebDialerPage() {
       <header className="sticky top-0 z-40 bg-[#173B63] text-white shadow-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/dialer" className="group">
-            <CooeeLogo size="md" showTagline={true} theme="dark" />
+            <CALLioLogo size="md" showTagline={true} theme="dark" />
           </Link>
 
           {/* Quick link to Elderly / Dependent Portal */}
@@ -431,7 +431,7 @@ export default function WebDialerPage() {
             </div>
           </div>
 
-          {/* Cooee eSIM & Data Saver Technical Telemetry Card */}
+          {/* CALLio eSIM & Data Saver Technical Telemetry Card */}
           <div className="rounded-3xl bg-white border border-[#E2E8F0] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -550,7 +550,7 @@ export default function WebDialerPage() {
               </div>
             </div>
 
-            {/* CALL INTENT SELECTOR (Restyled with Cooee Brand Accents) */}
+            {/* CALL INTENT SELECTOR (Restyled with CALLio Brand Accents) */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#173B63]">

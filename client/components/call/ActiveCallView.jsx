@@ -106,9 +106,9 @@ export default function ActiveCallView({ call, dialedNumber }) {
   return (
     <section
       aria-label="Active call"
-      className="h-screen w-screen bg-slate-950 px-4 sm:px-6 py-4 text-white flex flex-col justify-between overflow-hidden"
+      className="min-h-[100dvh] w-full bg-slate-950 px-4 sm:px-6 py-4 text-white flex flex-col justify-between overflow-y-auto"
     >
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-between overflow-hidden min-h-0">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-between min-h-0 pb-40">
         {/* Header row: telemetry HUD, call timer and intent badge */}
         <header className="flex flex-wrap items-start justify-between gap-3 shrink-0 pb-2">
           <TelemetryHUD

@@ -1,112 +1,213 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { CooeeLogo } from "@/components/CooeeLogo";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  {
-    label: "Home",
-    href: "/",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path d="M10 2.5L2 9h2v8h5v-5h2v5h5V9h2L10 2.5z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Dialer",
-    href: "/dialer",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path
-          fillRule="evenodd"
-          d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.582a1.5 1.5 0 01-1.052 1.74l-.537.17a.75.75 0 00-.49.72c.031 1.23.4 2.47 1.078 3.562.712 1.147 1.72 2.08 2.91 2.739a.75.75 0 00.758-.048l.47-.334a1.5 1.5 0 011.844.12l2.623 2.623A1.5 1.5 0 0116.5 19h-1C7.163 19 1 12.837 1 5V4a1.5 1.5 0 011-1.415V3.5z"
-          clipRule="evenodd"
-        />
-      </svg>
-    ),
-  },
-  {
-    label: "Contacts",
-    href: "/contacts",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Emergency Mode",
-    href: "/dependent",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path
-          fillRule="evenodd"
-          d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-          clipRule="evenodd"
-        />
-      </svg>
-    ),
-  },
-  {
-    label: "Profile",
-    href: "/profile",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path
-          fillRule="evenodd"
-          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a77 0 1114 0H3z"
-          clipRule="evenodd"
-        />
-      </svg>
-    ),
-  },
-];
+import { useEffect, useState } from "react";
 
 export function NavBar() {
-  const pathname = usePathname();
+  const [signedIn, setSignedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const updateAuthState = () => {
+      setSignedIn(
+        window.localStorage.getItem("callio_signed_in") === "true"
+      );
+    };
+
+    updateAuthState();
+
+    window.addEventListener("callio-auth-change", updateAuthState);
+
+    return () => {
+      window.removeEventListener(
+        "callio-auth-change",
+        updateAuthState
+      );
+    };
+  }, []);
+
+  const handleSignOut = () => {
+    window.localStorage.removeItem("callio_signed_in");
+    setSignedIn(false);
+    setMenuOpen(false);
+    window.location.href = "/dialer";
+  };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between bg-[#173B63] px-5 py-3 shadow-md shadow-[#0a1f3a]/40">
-      {/* Brand */}
-      <Link href="/" className="shrink-0">
-        <CooeeLogo size="md" theme="dark" />
-      </Link>
+    <header className="sticky top-0 z-50 bg-[#173B63] text-white shadow-md">
+      <div className="mx-auto flex h-[70px] w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+        {/* EXACT CALLiO LOGO */}
+        <Link
+          href="/dialer"
+          className="flex shrink-0 items-center"
+          aria-label="CALLiO Dialer"
+        >
+          <img
+            src="/callio-logo.jpg"
+            alt="CALLiO"
+            className="h-[54px] w-auto object-contain"
+          />
+        </Link>
 
-      {/* Nav links */}
-      <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ label, href, icon }) => {
-          const active = pathname === href;
+        {/* NAVIGATION */}
+        <nav className="ml-6 hidden items-center gap-1 md:flex">
+          <Link
+            href="/dialer"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition"
+          >
+            Dialer
+          </Link>
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
-                active
-                  ? "bg-[#2B6CB0] text-white shadow-sm"
-                  : "text-sky-200 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {icon}
-              <span className="hidden sm:inline">{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+          <Link
+            href="/dependent"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition"
+          >
+            Emergency Mode
+          </Link>
 
-      {/* Status pill */}
-      <div className="hidden md:flex items-center gap-2 rounded-full bg-[#0F2742] px-3 py-1.5 border border-white/10 shrink-0">
-        <span className="h-2 w-2 rounded-full bg-[#A7C957] animate-pulse" />
-        <span className="text-xs font-semibold text-slate-200">Online</span>
+          <Link
+            href="/contacts"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition"
+          >
+            Contacts
+          </Link>
+
+          <Link
+            href="/about"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition"
+          >
+            About
+          </Link>
+        </nav>
+
+        {/* RIGHT SIDE */}
+        <div className="ml-auto flex items-center gap-2">
+          {!signedIn ? (
+            <>
+              <Link
+                href="/login"
+                className="rounded-lg border border-white/30 px-3 py-2 text-xs font-bold text-white hover:bg-white/10 transition"
+              >
+                Sign In
+              </Link>
+
+              <Link
+                href="/register"
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#173B63] hover:bg-[#F5F8FC] transition"
+              >
+                Register
+              </Link>
+            </>
+          ) : (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/10 transition"
+                aria-label="Open profile menu"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#A7C957] text-sm font-extrabold text-[#173B63]">
+                  A
+                </div>
+
+                <div className="hidden text-left sm:block">
+                  <p className="text-xs font-bold">
+                    Anjali
+                  </p>
+
+                  <p className="text-[9px] text-blue-200">
+                    CALLiO member
+                  </p>
+                </div>
+
+                <span className="text-xs text-blue-200">
+                  {menuOpen ? "⌃" : "⌄"}
+                </span>
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-slate-800 shadow-xl">
+                  <div className="border-b border-[#E8EDF3] px-4 py-3">
+                    <p className="text-sm font-bold">
+                      Anjali
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] text-slate-500">
+                      CALLiO member
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-3 text-sm hover:bg-[#F5F8FC] transition"
+                  >
+                    👤 My Profile
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-[#F5F8FC] transition"
+                  >
+                    ⚙️ Settings
+                  </button>
+
+                  <Link
+                    href="/about"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-3 text-sm hover:bg-[#F5F8FC] transition"
+                  >
+                    ℹ️ About CALLiO
+                  </Link>
+
+                  <div className="border-t border-[#E8EDF3]" />
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+                  >
+                    ↪ Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MOBILE NAVIGATION */}
+      <div className="border-t border-white/10 px-4 py-2 md:hidden">
+        <div className="flex items-center justify-center gap-1 overflow-x-auto">
+          <Link
+            href="/dialer"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
+          >
+            Dialer
+          </Link>
+
+          <Link
+            href="/dependent"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
+          >
+            Emergency Mode
+          </Link>
+
+          <Link
+            href="/contacts"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
+          >
+            Contacts
+          </Link>
+
+          <Link
+            href="/about"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
+          >
+            About
+          </Link>
+        </div>
       </div>
     </header>
   );

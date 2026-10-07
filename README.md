@@ -1,4 +1,18 @@
-# 4A-Battery
+# Cooee Echo (4A-Battery)
+
+A robust WebRTC + Socket.IO Monorepo for the Cooee Echo Hackathon project.
+
+## Structure
+- `/server`: Node.js + Express + Socket.IO signaling server.
+- `/client`: Next.js App Router + Tailwind frontend.
+- `/components/call`: Adaptive PTT & Text fallback components, telemetry HUD, and network simulator.
+- `/app/calltest`: Local call test page and test harness.
+
+## Responsibilities
+- **Akshay (Core):** `server.js`, `useWebRTC.js`, STUN/TURN, Fallback Streams, Demo Mode.
+- **Akhila:** Adaptive Fallback, TelemetryHUD, NetworkSimulator, PTTControl, TextFallbackPanel.
+- **Amrutha:** Contextual Signaling, Intent Picker, IncomingCallModal.
+- **Anjali:** Dialer Shell, Elderly Dependent Portal (`/dependent`).
 
 ## Call test page tests
 

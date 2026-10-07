@@ -18,7 +18,7 @@ export default function EngineeringControlCenter() {
     <main className="p-8 min-h-screen bg-slate-900 text-slate-100 font-mono">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-          <h1 className="text-3xl font-bold text-green-400">CALLio: Engineering Control Center</h1>
+          <h1 className="text-3xl font-bold text-green-400">Cooee Echo: Engineering Control Center</h1>
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${isRegistered ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-sm">{isRegistered ? 'Connected to Signaling Server' : 'Disconnected'}</span>

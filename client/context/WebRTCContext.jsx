@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useState, useRef, useEffect } from "react";
+import { createContext, useState, useRef, useEffect, useCallback } from "react";
 import { io } from "socket.io-client";
 import { getIceServers } from "../utils/iceConfig";
 import { createSilentAudioStream } from "../utils/audioFallback";
@@ -152,6 +152,7 @@ export function WebRTCProvider({ children }) {
     try {
       const pc = new RTCPeerConnection({
         iceServers: getIceServers(),
+        
       });
       peerConnectionRef.current = pc;
 
@@ -256,7 +257,7 @@ export function WebRTCProvider({ children }) {
     if (socketRef.current?.connected) {
       socketRef.current.emit("register", normalized);
     }
-  };
+  }, [socketRef]);
 
   const startCall = async (targetNumberString, intentObject) => {
     setCallState("CALLING");

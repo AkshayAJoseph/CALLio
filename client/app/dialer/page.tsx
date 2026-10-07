@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useWebRTC } from "../../hooks/useWebRTC";
-import { CooeeLogo } from "@/components/CooeeLogo";
 import { playDTMFTone, playChime } from "@/lib/audio";
 import ActiveCallView from "@/components/call/ActiveCallView";
 
@@ -23,14 +22,14 @@ const AVAILABLE_SIMS: VirtualSIM[] = [
     country: "Australia",
     flag: "🇦🇺",
     label: "Sydney Core (Primary eSIM)",
-    carrier: "Cooee AU",
+    carrier: "CALLiO AU",
   },
   {
     number: "+44 770 000 222",
     country: "United Kingdom",
     flag: "🇬🇧",
     label: "London Gateway (Roaming eSIM)",
-    carrier: "Cooee UK Global",
+    carrier: "CALLiO UK Global",
   },
 ];
 
@@ -172,7 +171,6 @@ export default function WebDialerPage() {
   const activeSIM =
     AVAILABLE_SIMS.find((s) => normalizeForMatch(s.number) === myNumber) || AVAILABLE_SIMS[0];
 
-  // Call duration counter
   useEffect(() => {
     if (callState !== "CONNECTED") return;
     const timer = setInterval(() => {
@@ -181,7 +179,6 @@ export default function WebDialerPage() {
     return () => clearInterval(timer);
   }, [callState]);
 
-  // Handle dialpad click
   const handleDigitPress = (digit: string) => {
     playDTMFTone(digit);
     setInputNumber((prev) => prev + digit);
@@ -221,12 +218,6 @@ export default function WebDialerPage() {
     endActiveCall();
   };
 
-  const formatSeconds = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
   const dialPadKeys = [
     { digit: "1", sub: "" },
     { digit: "2", sub: "ABC" },
@@ -244,127 +235,141 @@ export default function WebDialerPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-slate-900 flex flex-col font-sans antialiased selection:bg-[#7FB3E6] selection:text-[#173B63]">
-      {/* =================================================================== */}
       {/* 1. TOP HEADER & BRANDING NAVIGATION */}
-      {/* =================================================================== */}
-      <header className="sticky top-0 z-40 bg-[#173B63] text-white shadow-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/dialer" className="group">
-            <CooeeLogo size="md" showTagline={true} theme="dark" />
-          </Link>
-
-          {/* Quick link to Elderly / Dependent Portal */}
-          <Link
-            href="/dependent"
-            className="hidden md:flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition shadow-sm"
-          >
-            <span className="text-sm">👵</span>
-            <span>Switch to Elderly Portal</span>
-          </Link>
-        </div>
-
-        {/* Right Header Status & eSIM Switcher */}
-        <div className="flex items-center gap-3">
-          {/* Data Saver eSIM Status Badge */}
-          <div className="hidden lg:flex items-center gap-2.5 rounded-full bg-[#0F2742] border border-[#7FB3E6]/30 px-3.5 py-1.5 text-xs shadow-inner">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A7C957] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#A7C957]"></span>
-            </span>
-            <div className="flex items-center gap-1.5 font-medium text-slate-200">
-              <span className="text-[#A7C957] font-bold">Data Saver</span>
-              <span className="text-slate-400">•</span>
-              <span>eSIM Active</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-[#7FB3E6] font-mono text-[11px]">
-                {telemetry.latencyMs ?? 24}ms
-              </span>
-            </div>
-          </div>
-
-          {/* Virtual SIM Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setSimMenuOpen(!simMenuOpen)}
-              className="flex items-center gap-2.5 rounded-xl bg-[#1E4670] hover:bg-[#255282] border border-white/15 px-3.5 py-1.5 text-xs font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-[#7FB3E6]/60 shadow-sm"
-              aria-expanded={simMenuOpen}
-              aria-label="Select Virtual SIM"
+      <header className="sticky top-0 z-40 bg-[#173B63] text-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-[66px] flex items-center justify-between gap-4">
+            {/* CALLiO LOGO */}
+            <Link
+              href="/dialer"
+              aria-label="Go to CALLiO Dialer"
+              className="shrink-0 flex items-center"
             >
-              <span className="text-base">{activeSIM.flag}</span>
-              <div className="text-left">
-                <p className="text-[10px] uppercase font-semibold text-[#7FB3E6] leading-tight">
-                  Active SIM Line
-                </p>
-                <p className="font-mono text-xs font-bold text-white leading-tight">
-                  {activeSIM.number}
-                </p>
+              <div className="h-10 w-28 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-black tracking-wider text-sm text-white">
+                CALLiO
               </div>
-              <svg
-                className={`w-3.5 h-3.5 text-slate-300 transition-transform ${
-                  simMenuOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            </Link>
 
-            {simMenuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-[#E2E8F0] p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 text-slate-900">
-                <div className="px-3 py-2 border-b border-slate-100">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#173B63]">
-                    Virtual SIM Switcher
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Select your outgoing caller identity
-                  </p>
-                </div>
-                <div className="mt-1 space-y-1">
-                  {AVAILABLE_SIMS.map((sim) => {
-                    const isSelected = normalizeForMatch(sim.number) === myNumber;
-                    return (
-                      <button
-                        key={sim.number}
-                        onClick={() => handleSIMChange(sim)}
-                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition ${
-                          isSelected
-                            ? "bg-[#EBF4FC] border border-[#2B6CB0]/40 text-[#173B63]"
-                            : "hover:bg-[#F8F9FB] text-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">{sim.flag}</span>
-                          <div>
-                            <p className="text-xs font-bold font-mono text-[#173B63]">
-                              {sim.number}
-                            </p>
-                            <p className="text-[11px] text-slate-500">{sim.label}</p>
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <span className="text-[#2B6CB0] text-xs font-bold bg-[#2B6CB0]/10 px-2 py-0.5 rounded-full">
-                            ACTIVE
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+            {/* NAVIGATION */}
+            <nav className="hidden md:flex items-center gap-1">
+              <Link
+                href="/dialer"
+                className="rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-white"
+              >
+                Dialer
+              </Link>
+
+              <Link
+                href="/dependent"
+                className="rounded-xl px-4 py-2 text-xs font-bold text-blue-100 hover:bg-white/10 hover:text-white transition"
+              >
+                Emergency Mode
+              </Link>
+
+              <Link
+                href="/contacts"
+                className="rounded-xl px-4 py-2 text-xs font-bold text-blue-100 hover:bg-white/10 hover:text-white transition"
+              >
+                Contacts
+              </Link>
+            </nav>
+
+            {/* Right Header Status & eSIM Switcher */}
+            <div className="flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-2.5 rounded-full bg-[#0F2742] border border-[#7FB3E6]/30 px-3.5 py-1.5 text-xs shadow-inner">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A7C957] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#A7C957]"></span>
+                </span>
+                <div className="flex items-center gap-1.5 font-medium text-slate-200">
+                  <span className="text-[#A7C957] font-bold">Data Saver</span>
+                  <span className="text-slate-400">•</span>
+                  <span>eSIM Active</span>
                 </div>
               </div>
-            )}
+
+              {/* Virtual SIM Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setSimMenuOpen(!simMenuOpen)}
+                  className="flex items-center gap-2.5 rounded-xl bg-[#1E4670] hover:bg-[#255282] border border-white/15 px-3.5 py-1.5 text-xs font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-[#7FB3E6]/60 shadow-sm"
+                  aria-expanded={simMenuOpen}
+                  aria-label="Select Virtual SIM"
+                >
+                  <span className="text-base">{activeSIM.flag}</span>
+                  <div className="text-left">
+                    <p className="text-[10px] uppercase font-semibold text-[#7FB3E6] leading-tight">
+                      Active SIM Line
+                    </p>
+                    <p className="font-mono text-xs font-bold text-white leading-tight">
+                      {activeSIM.number}
+                    </p>
+                  </div>
+                  <svg
+                    className={`w-3.5 h-3.5 text-slate-300 transition-transform ${
+                      simMenuOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {simMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-[#E2E8F0] p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 text-slate-900">
+                    <div className="px-3 py-2 border-b border-slate-100">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#173B63]">
+                        Virtual SIM Switcher
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Select your outgoing caller identity
+                      </p>
+                    </div>
+                    <div className="mt-1 space-y-1">
+                      {AVAILABLE_SIMS.map((sim) => {
+                        const isSelected = normalizeForMatch(sim.number) === myNumber;
+                        return (
+                          <button
+                            key={sim.number}
+                            onClick={() => handleSIMChange(sim)}
+                            className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition ${
+                              isSelected
+                                ? "bg-[#EBF4FC] border border-[#2B6CB0]/40 text-[#173B63]"
+                                : "hover:bg-[#F8F9FB] text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">{sim.flag}</span>
+                              <div>
+                                <p className="text-xs font-bold font-mono text-[#173B63]">
+                                  {sim.number}
+                                </p>
+                                <p className="text-[11px] text-slate-500">{sim.label}</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span className="text-[#2B6CB0] text-xs font-bold bg-[#2B6CB0]/10 px-2 py-0.5 rounded-full">
+                                ACTIVE
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* =================================================================== */}
       {/* 2. MAIN COOEE DASHBOARD CONTENT */}
-      {/* =================================================================== */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid gap-8 lg:grid-cols-12">
-        {/* Left Column: Quick Contacts & Telemetry eSIM Info (5 cols) */}
+        {/* Left Column: Quick Contacts & Telemetry eSIM Info */}
         <section className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
-          {/* Quick-Contact Cards */}
           <div className="rounded-3xl bg-white border border-[#E2E8F0] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <div>
@@ -447,19 +452,9 @@ export default function WebDialerPage() {
                   Audio Compression
                 </p>
                 <p className="font-mono font-bold text-[#173B63] mt-1 text-sm">
-                  {telemetry.codec || "Opus-NB 12kbps"}
+                  Opus-NB 12kbps
                 </p>
                 <p className="text-[10px] text-slate-500 mt-0.5">Ultralow bandwidth</p>
-              </div>
-
-              <div className="rounded-2xl bg-[#F8F9FB] p-3.5 border border-[#E2E8F0]">
-                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">
-                  Roundtrip Latency
-                </p>
-                <p className="font-mono font-bold text-[#2B6CB0] mt-1 text-sm">
-                  {telemetry.latencyMs || 24} ms
-                </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Jitter: ~3ms</p>
               </div>
 
               <div className="rounded-2xl bg-[#F8F9FB] p-3.5 border border-[#E2E8F0]">
@@ -473,23 +468,13 @@ export default function WebDialerPage() {
                   {activeSIM.country} Primary
                 </p>
               </div>
-
-              <div className="rounded-2xl bg-[#F8F9FB] p-3.5 border border-[#E2E8F0]">
-                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">
-                  Cellular Data Saved
-                </p>
-                <p className="font-mono font-bold text-[#A7C957] font-extrabold mt-1 text-sm">
-                  {telemetry.dataSavedMb || 14.8} MB
-                </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">85% compression</p>
-              </div>
             </div>
 
             {/* Portal Banner */}
             <div className="mt-5 rounded-2xl bg-gradient-to-r from-[#EBF4FC] to-[#F1F7FD] border border-[#7FB3E6]/40 p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-[#173B63]">
-                  Elderly &amp; Dependent Portal Ready
+                  Elderly &amp; Emergency Portal Ready
                 </p>
                 <p className="text-[11px] text-slate-600 mt-0.5">
                   Tablet view with auto-answer for trusted guardians
@@ -505,7 +490,7 @@ export default function WebDialerPage() {
           </div>
         </section>
 
-        {/* Right Column: WebDialer & Intent Selector (7 cols) */}
+        {/* Right Column: WebDialer & Intent Selector */}
         <section className="lg:col-span-7 flex flex-col gap-6 order-1 lg:order-2">
           <div className="rounded-3xl bg-white border border-[#E2E8F0] p-6 sm:p-8 shadow-sm">
             {/* Active Caller Header */}
@@ -521,7 +506,7 @@ export default function WebDialerPage() {
               </div>
             </div>
 
-            {/* Telephone Number Display (Clean Soft Cream card with Deep Navy text) */}
+            {/* Number Display */}
             <div className="relative mb-6 rounded-2xl bg-[#F8F9FB] border border-[#E2E8F0] px-6 py-5 text-center flex items-center justify-between shadow-inner">
               <div className="w-8"></div>
               <div className="flex-1 overflow-x-auto text-center">
@@ -546,7 +531,7 @@ export default function WebDialerPage() {
               </div>
             </div>
 
-            {/* CALL INTENT SELECTOR (Restyled with Cooee Brand Accents) */}
+            {/* CALL INTENT SELECTOR */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#173B63]">
@@ -589,7 +574,6 @@ export default function WebDialerPage() {
                 })}
               </div>
 
-              {/* Informative helper note for selected intent */}
               <div className="mt-3 px-3.5 py-2.5 rounded-2xl bg-[#F8F9FB] border border-[#E2E8F0] text-[11px] text-slate-600 flex items-center gap-2.5">
                 <span className="text-base">{INTENT_CONFIG[selectedIntent].icon}</span>
                 <span>
@@ -599,7 +583,7 @@ export default function WebDialerPage() {
               </div>
             </div>
 
-            {/* Interactive Telephone Dial Pad (Skype / modern calling app aesthetic) */}
+            {/* Telephone Dial Pad */}
             <div className="mx-auto grid max-w-sm grid-cols-3 gap-3.5 mb-6">
               {dialPadKeys.map(({ digit, sub }) => (
                 <button
@@ -617,7 +601,7 @@ export default function WebDialerPage() {
               ))}
             </div>
 
-            {/* Action Bar (Clear, Call, Delete) */}
+            {/* Action Bar */}
             <div className="flex items-center justify-center gap-4">
               <button
                 onClick={handleClearNumber}
@@ -627,7 +611,6 @@ export default function WebDialerPage() {
                 Clear
               </button>
 
-              {/* Main Call Button (Styles dynamically according to intent) */}
               <button
                 onClick={handleInitiateCall}
                 disabled={!inputNumber}
@@ -651,9 +634,7 @@ export default function WebDialerPage() {
         </section>
       </main>
 
-      {/* =================================================================== */}
-      {/* 3. ACTIVE CALL MODAL / OVERLAY & CONNECTED FALLBACK VIEW */}
-      {/* =================================================================== */}
+      {/* 3. ACTIVE CALL OVERLAY & CONNECTED FALLBACK VIEW */}
       {callState === "CONNECTED" && (
         <div className="fixed inset-0 z-50 bg-slate-950 overflow-y-auto">
           <ActiveCallView call={webRTC} dialedNumber={inputNumber} />
@@ -692,7 +673,7 @@ export default function WebDialerPage() {
             </p>
 
             <p className="text-xs text-slate-300 mb-6 font-mono">
-              Via {myNumber} • {telemetry.codec || "Opus 12kbps"}
+              Via {myNumber}
             </p>
 
             {/* Controls */}
@@ -737,19 +718,11 @@ export default function WebDialerPage() {
                 ✕
               </button>
             </div>
-
-            <div className="rounded-2xl bg-[#0F2742] p-3 text-[11px] font-mono text-slate-300 flex justify-between">
-              <span>Bitrate: {telemetry.bitrateKbps || 16} kbps</span>
-              <span className="text-[#A7C957]">Data Saver: Active</span>
-              <span>Loss: {telemetry.packetLossPercent || 0}%</span>
-            </div>
           </div>
         </div>
       )}
 
-      {/* =================================================================== */}
       {/* 4. DEMO SIMULATION FOOTER */}
-      {/* =================================================================== */}
       <aside className="border-t border-[#E2E8F0] bg-white py-3 px-4 text-xs text-slate-600">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -801,7 +774,7 @@ export default function WebDialerPage() {
               href="/dependent"
               className="rounded-xl bg-[#2B6CB0] hover:bg-[#235891] text-white px-3.5 py-1.5 text-[11px] font-bold shadow-sm transition"
             >
-              Go to /dependent ➔
+              Go to Emergency Mode ➔
             </Link>
           </div>
         </div>

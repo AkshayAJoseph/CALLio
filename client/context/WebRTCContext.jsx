@@ -108,13 +108,16 @@ export function WebRTCProvider({ children }) {
     });
 
     socket.on("call-ended", () => {
-      // We will fully implement endActiveCall next, but for now reset state
       setCallState("IDLE");
       setIncomingCall(null);
       setActiveCallMeta(null);
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
       }
     });
 

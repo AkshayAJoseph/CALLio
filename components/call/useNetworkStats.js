@@ -4,6 +4,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MODE_PRESET_VALUES, ZERO_TELEMETRY, evaluateNetwork } from "./thresholds";
 import { parseStatsReport, calcPacketLoss } from "./statsParser";
 
+// Hysteresis constants for real stats only:
+// Downgrade after 3 bad polls in a row.
+// Upgrade only after 5 good polls in a row.
+const DOWNGRADE_THRESHOLD = 3;
+const UPGRADE_THRESHOLD = 5;
+
+const MODE_ORDER = {
+  FULL_AUDIO: 0,
+  PTT: 1,
+  TEXT: 2,
+};
+
+function getNextHysteresisState(currentCommittedMode, candidateMode, streakCount, streakMode) {
+  if (candidateMode === currentCommittedMode) {
+    return { committed: currentCommittedMode, count: 0, mode: null };
+  }
+
+  const isDowngrade = MODE_ORDER[candidateMode] > MODE_ORDER[currentCommittedMode];
+  const targetThreshold = isDowngrade ? DOWNGRADE_THRESHOLD : UPGRADE_THRESHOLD;
+
+  if (streakMode === candidateMode) {
+    const newCount = streakCount + 1;
+    if (newCount >= targetThreshold) {
+      return { committed: candidateMode, count: 0, mode: null };
+    }
+    return { committed: currentCommittedMode, count: newCount, mode: candidateMode };
+  }
+
+  return { committed: currentCommittedMode, count: 1, mode: candidateMode };
+}
+
 // Polls getStats() once a second and returns plain numbers.
 //
 // Returns { telemetry, source, setOverride, isOverridden, evaluatedLevel }
@@ -24,9 +55,23 @@ export function useNetworkStats({ peerConnectionRef, networkMode = "FULL_AUDIO" 
   const prevSampleRef = useRef(null);
   const lastRttRef = useRef(0);
 
+  // Hysteresis refs
+  const committedModeRef = useRef(networkMode);
+  const streakCountRef = useRef(0);
+  const streakModeRef = useRef(null);
+
+  // Keep committed mode aligned if remote party switched mode
+  useEffect(() => {
+    committedModeRef.current = networkMode;
+    streakCountRef.current = 0;
+    streakModeRef.current = null;
+  }, [networkMode]);
+
   const setOverride = useCallback((preset) => {
     if (!preset) {
       setOverrideState(null);
+      streakCountRef.current = 0;
+      streakModeRef.current = null;
       return;
     }
     const values = preset.telemetry ?? preset;
@@ -55,7 +100,7 @@ export function useNetworkStats({ peerConnectionRef, networkMode = "FULL_AUDIO" 
 
         if (!parsed.hasAudio) {
           prevSampleRef.current = null;
-          setLive({ connecting: true, telemetry: ZERO_TELEMETRY });
+          setLive({ connecting: true, telemetry: ZERO_TELEMETRY, candidate: null });
           return;
         }
 
@@ -63,9 +108,29 @@ export function useNetworkStats({ peerConnectionRef, networkMode = "FULL_AUDIO" 
         prevSampleRef.current = { lost: parsed.lost, received: parsed.received };
         if (parsed.rtt !== null) lastRttRef.current = parsed.rtt;
 
+        const currentTelemetry = {
+          packetLoss,
+          jitter: parsed.jitter,
+          rtt: lastRttRef.current,
+        };
+        const rawEvaluated = evaluateNetwork(currentTelemetry);
+
+        // Apply hysteresis to real stats
+        const nextHysteresis = getNextHysteresisState(
+          committedModeRef.current,
+          rawEvaluated,
+          streakCountRef.current,
+          streakModeRef.current
+        );
+
+        committedModeRef.current = nextHysteresis.committed;
+        streakCountRef.current = nextHysteresis.count;
+        streakModeRef.current = nextHysteresis.mode;
+
         setLive({
           connecting: false,
-          telemetry: { packetLoss, jitter: parsed.jitter, rtt: lastRttRef.current },
+          telemetry: currentTelemetry,
+          evaluatedLevel: nextHysteresis.committed,
         });
       } catch {
         // A failed poll must never crash the call screen. Try again next tick.
@@ -116,6 +181,6 @@ export function useNetworkStats({ peerConnectionRef, networkMode = "FULL_AUDIO" 
     source: "live",
     setOverride,
     isOverridden: false,
-    evaluatedLevel: evaluateNetwork(live.telemetry),
+    evaluatedLevel: live.evaluatedLevel,
   };
 }

@@ -250,7 +250,7 @@ export function WebRTCProvider({ children }) {
   };
 
   // --- ACTION FUNCTIONS (STUBS REPLACED) ---
-  const registerNumber = (phoneNumberString) => {
+  const registerNumber = useCallback((phoneNumberString) => {
     const normalized = phoneNumberString.replace(/[\s\-\(\)]/g, "");
     setMyNumber(normalized);
     if (socketRef.current?.connected) {

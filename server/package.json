@@ -1,7 +1,7 @@
 {
-  "name": "cooee-echo-server",
+  "name": "callio-echo-server",
   "version": "1.0.0",
-  "description": "Cooee Echo Socket.IO Signaling Server",
+  "description": "CALLio Socket.IO Signaling Server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

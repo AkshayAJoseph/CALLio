@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 # CALLio - Contextual Calling & Resilient Communications
 <img width="1600" height="639" alt="image" src="https://github.com/user-attachments/assets/608c6a31-2c28-4130-b1d1-6ebafd5006b6" />
 
 ## Abstract
 CALLio (formally known as Cooee Echo) is a revolutionary real-time communication platform engineered by Team 4A Battery (Helldivers). Built to tackle the critical issue of dropped calls under severe network degradation, CALLio implements a proprietary **"Zero-Crash Fallback Illusion."** 
+=======
+# CALLio
+
+A robust WebRTC + Socket.IO Monorepo for the CALLio Hackathon project.
+>>>>>>> 403b183 (chore: rebrand application globally to CALLio)
 
 Unlike traditional VoIP apps that tear down and renegotiate connections when bandwidth drops, CALLio maintains a single, persistent WebRTC connection comprising **1 Audio Track** and **1 RTCDataChannel**. As network telemetry (Jitter, Packet Loss, RTT) worsens, the application seamlessly degrades the user experience through three distinct tiers: **Full Audio** -> **Push-to-Talk (PTT)** -> **Live Text**. The mic is dynamically enabled/disabled and communication is routed through the ultra-low-bandwidth DataChannel, ensuring that the call is never truly dropped.
 

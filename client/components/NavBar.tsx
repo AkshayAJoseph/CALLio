@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CooeeLogo } from "@/components/CooeeLogo";
+import { CALLioLogo } from "@/components/CALLioLogo";
 
 interface NavItem {
   label: string;
@@ -78,7 +78,7 @@ export function NavBar() {
     <header className="sticky top-0 z-30 flex items-center justify-between bg-[#173B63] px-5 py-3 shadow-md shadow-[#0a1f3a]/40">
       {/* Brand */}
       <Link href="/" className="shrink-0">
-        <CooeeLogo size="md" theme="dark" />
+        <CALLioLogo size="md" theme="dark" />
       </Link>
 
       {/* Nav links */}

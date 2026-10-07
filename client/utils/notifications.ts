@@ -26,7 +26,7 @@ export function notifyIncomingCall(call) {
     closeCallNotification();
     current = new Notification(`Incoming call: ${call.from}`, {
       body: `${call.intentTag || "Call"}${call.note ? " - " + call.note : ""}`,
-      tag: "cooee-call",
+      tag: "callio-call",
       requireInteraction: true,
     });
     current.onclick = () => {

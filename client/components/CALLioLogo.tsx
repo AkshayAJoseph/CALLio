@@ -2,21 +2,21 @@
 
 import React from "react";
 
-interface CooeeLogoProps {
+interface CALLioLogoProps {
   size?: "sm" | "md" | "lg";
   showTagline?: boolean;
   theme?: "light" | "dark";
 }
 
 /**
- * CooeeLogo — Callio-style bird + branch + wordmark logo.
+ * CALLioLogo — Callio-style bird + branch + wordmark logo.
  * Inspired by the official Callio brand (blue bird on a branch, communication wave).
  */
-export function CooeeLogo({
+export function CALLioLogo({
   size = "md",
   showTagline = false,
   theme = "dark",
-}: CooeeLogoProps) {
+}: CALLioLogoProps) {
   const iconSize = size === "sm" ? 30 : size === "lg" ? 48 : 38;
   const isDark = theme === "dark";
   const textSize =

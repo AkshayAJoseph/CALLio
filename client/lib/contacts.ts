@@ -1,4 +1,4 @@
-// Shared contact store for Cooee UI
+// Shared contact store for CALLio UI
 // All pages (Dialer, Contacts, Dependent) pull from this single source of truth.
 
 export type Relationship = "Family" | "Friend" | "Doctor" | "Guardian" | "Other";

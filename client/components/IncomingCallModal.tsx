@@ -85,7 +85,7 @@ export default function IncomingCallModal({
           }`}
         />
 
-        <p className="text-sm text-slate-400">Incoming Cooee call</p>
+        <p className="text-sm text-slate-400">Incoming CALLio call</p>
         <h1 id="incoming-title" className="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">
           {incomingCall.from}
         </h1>

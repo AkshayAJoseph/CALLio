@@ -3,7 +3,7 @@ import { WebRTCProvider } from "../context/WebRTCContext";
 import RemoteAudioPlayer from "../components/audio/RemoteAudioPlayer";
 
 export const metadata = {
-  title: "Cooee Echo",
+  title: "CALLio",
   description: "WebRTC + WebSockets App",
 };
 

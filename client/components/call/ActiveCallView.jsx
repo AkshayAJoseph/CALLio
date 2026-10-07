@@ -1,150 +1,223 @@
 "use client";
 
-import { useState } from "react";
-import { useWebRTC } from "../../hooks/useWebRTC";
-import TelemetryHUD from "./TelemetryHUD";
+import React, { useEffect, useRef, useState } from "react";
 import NetworkSimulator from "./NetworkSimulator";
+import PTTControl from "./PTTControl";
+import TextFallbackPanel from "./TextFallbackPanel";
+import TelemetryHUD from "./TelemetryHUD";
+import { useNetworkStats } from "./useNetworkStats";
 
-export default function ActiveCallView() {
-  const { 
-    callState, 
-    activeCallMeta, 
-    endActiveCall,
-    networkMode,
-    isPTTTalking,
-    isRemotePTTTalking,
+// The in call screen, shown whenever callState is CONNECTED.
+// It receives the whole useWebRTC result as the `call` prop, so the parent owns
+// the one and only hook instance.
+
+const TOAST_MESSAGES = {
+  FULL_AUDIO: "Network recovered. Back to full audio. Call kept alive.",
+  PTT: "Network degraded. Switched to Push to Talk. Call kept alive.",
+  TEXT: "Network critical. Switched to live text. Call kept alive.",
+};
+
+const TOAST_DURATION_MS = 4000;
+
+function formatSeconds(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+export default function ActiveCallView({ call, dialedNumber }) {
+  const {
+    networkMode = "FULL_AUDIO",
+    incomingCall = null,
+    activeCallMeta = null,
+    isPTTTalking = false,
+    isRemotePTTTalking = false,
+    myNumber = "",
+    chatMessages = [],
+    remoteLiveDraft = "",
+    remoteTypingText = "",
+    peerConnectionRef = null,
+    setFallbackMode,
     setPTTActive,
-    chatMessages,
-    isLiveDraftEnabled,
-    setIsLiveDraftEnabled,
-    isRemoteTyping,
-    remoteLiveDraft,
+    sendTextFallback,
+    sendLiveTyping,
     handleTypingInput,
-    sendTextFallback
-  } = useWebRTC();
+    endActiveCall,
+  } = call ?? {};
 
+  const partnerNumber =
+    incomingCall?.from ??
+    activeCallMeta?.remoteNumber ??
+    dialedNumber ??
+    "Unknown number";
+
+  const partnerTypingText = remoteTypingText || remoteLiveDraft || "";
+  const onTyping = sendLiveTyping || handleTypingInput;
+
+  // Phase 9: Call duration timer
+  const [callDurationSec, setCallDurationSec] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDurationSec((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Telemetry numbers
+  const { telemetry, source, setOverride, isOverridden, evaluatedLevel } =
+    useNetworkStats({ peerConnectionRef, networkMode });
+
+  // Edge triggered switching
+  const networkModeRef = useRef(networkMode);
+  networkModeRef.current = networkMode;
+  const lastLevelRef = useRef(null);
+
+  useEffect(() => {
+    if (!evaluatedLevel) {
+      lastLevelRef.current = null;
+      return;
+    }
+    const baseline = lastLevelRef.current ?? networkModeRef.current;
+    lastLevelRef.current = evaluatedLevel;
+    if (evaluatedLevel !== baseline) {
+      setFallbackMode?.(evaluatedLevel);
+    }
+  }, [evaluatedLevel, setFallbackMode]);
+
+  // Chat draft survives switching away from TEXT and back
   const [draft, setDraft] = useState("");
 
-  if (callState !== "CONNECTED" || !activeCallMeta) return null;
+  // Mode change toast
+  const [toast, setToast] = useState("");
+  const previousMode = useRef(networkMode);
 
-  const handleSend = () => {
-    if (draft.trim()) {
-      sendTextFallback(draft);
-      setDraft("");
-    }
-  };
+  useEffect(() => {
+    if (previousMode.current === networkMode) return undefined;
+    previousMode.current = networkMode;
+    setToast(TOAST_MESSAGES[networkMode] ?? "");
+    const timer = setTimeout(() => setToast(""), TOAST_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [networkMode]);
+
+  const intentTag = incomingCall?.intentTag || activeCallMeta?.intentTag;
+  const note = incomingCall?.note || activeCallMeta?.note;
 
   return (
-    <div className="relative border rounded p-6 bg-slate-50 shadow-md max-w-lg mx-auto mt-8 flex flex-col h-[500px]">
-      <TelemetryHUD />
-      
-      {/* Call Header */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-green-600 animate-pulse">Call Connected</h2>
-        <p className="text-lg font-mono mt-2">{activeCallMeta.remoteNumber}</p>
-        
-        {/* Intent Badge */}
-        {activeCallMeta.intentTag && (
-          <div className="mt-2 inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-            {activeCallMeta.intentTag} ({activeCallMeta.priority})
-          </div>
-        )}
-      </div>
+    <section
+      aria-label="Active call"
+      className="min-h-screen bg-slate-950 px-4 pb-72 pt-6 text-white"
+    >
+      <div className="mx-auto flex max-w-xl flex-col gap-6">
+        {/* Header row: telemetry HUD, call timer and intent badge */}
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <TelemetryHUD
+            networkMode={networkMode}
+            telemetry={telemetry}
+            source={source}
+          />
 
-      {/* Dynamic Controls based on Network Mode */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {networkMode === "FULL_AUDIO" && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-24 h-24 rounded-full bg-blue-500 animate-bounce flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xs">Full Duplex</span>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 font-mono text-sm font-semibold text-slate-200">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+              <span>{formatSeconds(callDurationSec)}</span>
             </div>
-          </div>
-        )}
 
-        {networkMode === "PTT" && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6">
-            {isRemotePTTTalking ? (
-              <p className="text-orange-500 font-bold animate-pulse">Partner is talking...</p>
-            ) : (
-              <p className="text-gray-400">Channel open</p>
-            )}
-            
-            <button
-              onMouseDown={() => setPTTActive(true)}
-              onMouseUp={() => setPTTActive(false)}
-              onMouseLeave={() => setPTTActive(false)}
-              onTouchStart={() => setPTTActive(true)}
-              onTouchEnd={() => setPTTActive(false)}
-              className={`w-32 h-32 rounded-full font-bold text-white shadow-lg transition-all ${
-                isPTTTalking ? "bg-red-500 scale-95" : "bg-blue-600 hover:bg-blue-700 scale-100"
-              }`}
-            >
-              {isPTTTalking ? "TALKING" : "HOLD TO TALK"}
-            </button>
-          </div>
-        )}
-
-        {networkMode === "TEXT" && (
-          <div className="flex-1 flex flex-col bg-white border rounded">
-            {/* Chat History */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className="bg-gray-100 p-2 rounded text-sm w-fit max-w-[80%]">
-                  <span className="font-bold text-xs text-blue-600 block">{msg.sender}</span>
-                  <span>{msg.text}</span>
-                  <span className="text-[10px] text-gray-400 ml-2">{msg.time}</span>
-                </div>
-              ))}
-            </div>
-            
-            {/* Live Draft Indicator */}
-            <div className="h-6 px-4">
-              {isRemoteTyping && (
-                <p className="text-xs text-gray-500 italic">
-                  Partner is typing... <span className="font-mono text-blue-600">{remoteLiveDraft}</span>
+            {intentTag && (
+              <div
+                data-testid="intent-badge"
+                className="max-w-full rounded-2xl border border-violet-600 bg-violet-600/10 px-4 py-2 text-right"
+              >
+                <p className="break-words text-base font-semibold text-violet-200">
+                  {intentTag}
                 </p>
-              )}
-            </div>
-
-            {/* Input Area */}
-            <div className="p-2 border-t bg-gray-50 flex flex-col gap-2">
-              <label className="text-xs flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={isLiveDraftEnabled}
-                  onChange={(e) => setIsLiveDraftEnabled(e.target.checked)}
-                />
-                Enable Live Draft Streaming
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(e) => {
-                    setDraft(e.target.value);
-                    handleTypingInput(e.target.value);
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Network critical. Fallback to text..."
-                  className="flex-1 border p-2 text-sm rounded"
-                />
-                <button onClick={handleSend} className="bg-blue-600 text-white px-4 rounded text-sm font-bold">
-                  Send
-                </button>
+                {note && (
+                  <p className="break-words text-sm text-slate-400">
+                    {note}
+                  </p>
+                )}
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </header>
+
+        {/* Partner number */}
+        <div>
+          <p className="text-sm text-slate-400">On a call with</p>
+          <p className="text-3xl font-bold font-mono">{partnerNumber}</p>
+        </div>
+
+        {/* Mode area, switched by networkMode */}
+        <div
+          data-testid="mode-area"
+          data-mode={networkMode}
+          className="rounded-2xl border border-slate-800 bg-slate-900 p-6"
+        >
+          {networkMode === "FULL_AUDIO" && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div
+                aria-hidden="true"
+                className="h-24 w-24 rounded-full border-4 border-emerald-500 bg-emerald-500/20 motion-safe:animate-pulse"
+              />
+              <h3 className="text-2xl font-semibold">Live audio</h3>
+              <p className="text-lg text-slate-400">
+                Talk normally. The call is clear.
+              </p>
+            </div>
+          )}
+
+          {networkMode === "PTT" && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <h3 className="text-2xl font-semibold">Push to Talk</h3>
+              <PTTControl
+                networkMode={networkMode}
+                isPTTTalking={isPTTTalking}
+                isRemotePTTTalking={isRemotePTTTalking}
+                setPTTActive={setPTTActive}
+              />
+            </div>
+          )}
+
+          {networkMode === "TEXT" && (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <h3 className="text-2xl font-semibold">Live text</h3>
+              <TextFallbackPanel
+                chatMessages={chatMessages}
+                remoteTypingText={partnerTypingText}
+                myNumber={myNumber}
+                draft={draft}
+                onDraftChange={setDraft}
+                sendTextFallback={sendTextFallback}
+                sendLiveTyping={onTyping}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Mode change toast */}
+        <div role="status" aria-live="polite" className="min-h-[56px]">
+          {toast && (
+            <p className="rounded-xl border border-indigo-500 bg-indigo-500/10 px-4 py-3 text-base text-indigo-200">
+              {toast}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => endActiveCall?.()}
+          className="min-h-[56px] w-full rounded-xl bg-rose-600 px-6 text-lg font-semibold text-white focus:outline-none focus:ring-4 focus:ring-rose-300 transition hover:bg-rose-700 active:scale-[0.99]"
+        >
+          End call
+        </button>
       </div>
 
-      <NetworkSimulator />
+      <audio id="remoteAudio" autoPlay />
 
-      <button 
-        onClick={endActiveCall}
-        className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow"
-      >
-        End Call
-      </button>
-    </div>
+      <NetworkSimulator
+        isOverridden={isOverridden}
+        onSelectPreset={setOverride}
+        onReturnToLive={() => setOverride(null)}
+      />
+    </section>
   );
 }

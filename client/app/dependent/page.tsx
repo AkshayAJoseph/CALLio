@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import ActiveCallView from "../../components/call/ActiveCallView";
 // TEMPORARY UI DEVELOPMENT MOCK:
 // Replace useMockWebRTC with Akshay's shared useWebRTC hook when his implementation is integrated.
 import { useWebRTC as useMockWebRTC } from "../../hooks/useWebRTC";
@@ -24,6 +25,7 @@ export default function DependentPortalPage() {
     endActiveCall,
     simulateIncomingCall,
   } = useMockWebRTC();
+  const webrtc = useMockWebRTC();
 
   // Auto-answer timer and state
   const [countdown, setCountdown] = useState<number>(3);
@@ -269,7 +271,8 @@ export default function DependentPortalPage() {
       {/* =================================================================== */}
       {/* 3. CONNECTED CALL OVERLAY (WHEN SPEAKING) */}
       {/* =================================================================== */}
-      {callState === "CONNECTED" && (
+      {callState === "CONNECTED" && <ActiveCallView call={webrtc} dialedNumber={incomingCall?.from || ""} />}
+      {callState === "HIDE_OLD_UI" && (
         <div className="fixed inset-0 z-50 bg-[#173B63] text-white flex flex-col items-center justify-between p-8 sm:p-16 text-center animate-in fade-in duration-200">
           <div className="flex flex-col items-center mt-6">
             <span className="rounded-full bg-[#A7C957]/20 text-[#A7C957] border-2 border-[#A7C957]/50 px-6 py-2 text-2xl font-black uppercase">

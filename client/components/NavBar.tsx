@@ -39,13 +39,13 @@ export function NavBar() {
         {/* EXACT CALLiO LOGO */}
         <Link
           href="/dialer"
-          className="flex shrink-0 items-center"
+          className="flex shrink-0 items-center hover:opacity-95 transition"
           aria-label="CALLiO Dialer"
         >
           <img
-            src="/callio-logo.jpg"
-            alt="CALLiO"
-            className="h-[54px] w-auto object-contain"
+            src="/bluebird-callio-logo.png"
+            alt="CALLiO - Clear Calls, Better Connections"
+            className="h-[50px] w-auto object-contain"
           />
         </Link>
 

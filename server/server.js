@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", ({ to, from, candidate }) => {
     const targetSocketId = phonebook.get(to);
     if (targetSocketId) {
-      console.log(\x1b[33m[ICE-TRICKLE]\x1b[0m ?? Routing network candidate from  to ...);
+      console.log(`\x1b[33m[ICE-TRICKLE]\x1b[0m ?? Routing network candidate from ${from} to ${to}...`);
       io.to(targetSocketId).emit("ice-candidate", { from, candidate });
     }
   });

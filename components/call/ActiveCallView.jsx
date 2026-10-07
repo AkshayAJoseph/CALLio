@@ -9,7 +9,7 @@ import { useNetworkStats } from "./useNetworkStats";
 
 // The in call screen, shown whenever callState is CONNECTED.
 // It receives the whole useWebRTC result as the `call` prop, so the parent owns
-// the one and only hook instance. Never call useWebRTC inside this component.
+// the one and only hook instance.
 
 const TOAST_MESSAGES = {
   FULL_AUDIO: "Network recovered. Back to full audio. Call kept alive.",
@@ -19,33 +19,55 @@ const TOAST_MESSAGES = {
 
 const TOAST_DURATION_MS = 4000;
 
+function formatSeconds(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function ActiveCallView({ call, dialedNumber }) {
   const {
     networkMode = "FULL_AUDIO",
     incomingCall = null,
+    activeCallMeta = null,
     isPTTTalking = false,
     isRemotePTTTalking = false,
     myNumber = "",
     chatMessages = [],
+    remoteLiveDraft = "",
     remoteTypingText = "",
     peerConnectionRef = null,
     setFallbackMode,
     setPTTActive,
     sendTextFallback,
     sendLiveTyping,
+    handleTypingInput,
     endActiveCall,
   } = call ?? {};
 
-  const partnerNumber = incomingCall?.from ?? dialedNumber ?? "Unknown number";
+  const partnerNumber =
+    incomingCall?.from ??
+    activeCallMeta?.remoteNumber ??
+    dialedNumber ??
+    "Unknown number";
 
-  // Telemetry numbers. With the mock hook the ref is null, so these are fake values
-  // until the simulator sets an override.
+  const partnerTypingText = remoteTypingText || remoteLiveDraft || "";
+  const onTyping = sendLiveTyping || handleTypingInput;
+
+  // Phase 9: Call duration timer
+  const [callDurationSec, setCallDurationSec] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDurationSec((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Telemetry numbers
   const { telemetry, source, setOverride, isOverridden, evaluatedLevel } =
     useNetworkStats({ peerConnectionRef, networkMode });
 
-  // Edge triggered switching. setFallbackMode is called only when the evaluated
-  // level changes, never on every tick. When there is nothing to evaluate we forget
-  // the last level, so the next level is compared with the current networkMode.
+  // Edge triggered switching
   const networkModeRef = useRef(networkMode);
   networkModeRef.current = networkMode;
   const lastLevelRef = useRef(null);
@@ -62,10 +84,10 @@ export default function ActiveCallView({ call, dialedNumber }) {
     }
   }, [evaluatedLevel, setFallbackMode]);
 
-  // The chat draft lives here so it survives switching away from TEXT and back.
+  // Chat draft survives switching away from TEXT and back
   const [draft, setDraft] = useState("");
 
-  // Mode change toast. The first render never shows one.
+  // Mode change toast
   const [toast, setToast] = useState("");
   const previousMode = useRef(networkMode);
 
@@ -77,13 +99,16 @@ export default function ActiveCallView({ call, dialedNumber }) {
     return () => clearTimeout(timer);
   }, [networkMode]);
 
+  const intentTag = incomingCall?.intentTag || activeCallMeta?.intentTag;
+  const note = incomingCall?.note || activeCallMeta?.note;
+
   return (
     <section
       aria-label="Active call"
       className="min-h-screen bg-slate-950 px-4 pb-72 pt-6 text-white"
     >
       <div className="mx-auto flex max-w-xl flex-col gap-6">
-        {/* Header row: telemetry HUD and intent badge */}
+        {/* Header row: telemetry HUD, call timer and intent badge */}
         <header className="flex flex-wrap items-start justify-between gap-3">
           <TelemetryHUD
             networkMode={networkMode}
@@ -91,27 +116,34 @@ export default function ActiveCallView({ call, dialedNumber }) {
             source={source}
           />
 
-          {incomingCall?.intentTag && (
-            <div
-              data-testid="intent-badge"
-              className="max-w-full rounded-2xl border border-violet-600 bg-violet-600/10 px-4 py-2 text-right"
-            >
-              <p className="break-words text-base font-semibold text-violet-200">
-                {incomingCall.intentTag}
-              </p>
-              {incomingCall.note && (
-                <p className="break-words text-sm text-slate-400">
-                  {incomingCall.note}
-                </p>
-              )}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 font-mono text-sm font-semibold text-slate-200">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+              <span>{formatSeconds(callDurationSec)}</span>
             </div>
-          )}
+
+            {intentTag && (
+              <div
+                data-testid="intent-badge"
+                className="max-w-full rounded-2xl border border-violet-600 bg-violet-600/10 px-4 py-2 text-right"
+              >
+                <p className="break-words text-base font-semibold text-violet-200">
+                  {intentTag}
+                </p>
+                {note && (
+                  <p className="break-words text-sm text-slate-400">
+                    {note}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </header>
 
-        {/* Partner number. A call duration timer is a stretch goal. */}
+        {/* Partner number */}
         <div>
           <p className="text-sm text-slate-400">On a call with</p>
-          <p className="text-3xl font-bold">{partnerNumber}</p>
+          <p className="text-3xl font-bold font-mono">{partnerNumber}</p>
         </div>
 
         {/* Mode area, switched by networkMode */}
@@ -150,18 +182,18 @@ export default function ActiveCallView({ call, dialedNumber }) {
               <h3 className="text-2xl font-semibold">Live text</h3>
               <TextFallbackPanel
                 chatMessages={chatMessages}
-                remoteTypingText={remoteTypingText}
+                remoteTypingText={partnerTypingText}
                 myNumber={myNumber}
                 draft={draft}
                 onDraftChange={setDraft}
                 sendTextFallback={sendTextFallback}
-                sendLiveTyping={sendLiveTyping}
+                sendLiveTyping={onTyping}
               />
             </div>
           )}
         </div>
 
-        {/* Mode change toast. The region is always mounted so screen readers announce changes. */}
+        {/* Mode change toast */}
         <div role="status" aria-live="polite" className="min-h-[56px]">
           {toast && (
             <p className="rounded-xl border border-indigo-500 bg-indigo-500/10 px-4 py-3 text-base text-indigo-200">
@@ -173,13 +205,12 @@ export default function ActiveCallView({ call, dialedNumber }) {
         <button
           type="button"
           onClick={() => endActiveCall?.()}
-          className="min-h-[56px] w-full rounded-xl bg-rose-600 px-6 text-lg font-semibold text-white focus:outline-none focus:ring-4 focus:ring-rose-300"
+          className="min-h-[56px] w-full rounded-xl bg-rose-600 px-6 text-lg font-semibold text-white focus:outline-none focus:ring-4 focus:ring-rose-300 transition hover:bg-rose-700 active:scale-[0.99]"
         >
           End call
         </button>
       </div>
 
-      {/* The hook binds the remote stream to this id, so it must exist in every mode including TEXT. */}
       <audio id="remoteAudio" autoPlay />
 
       <NetworkSimulator
